@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SmartClipboard</string>
+    <string name="tile_clipboard_capture_label">Clip Save</string>
+</resources>
