@@ -93,8 +93,24 @@ fun DataScreen(
         navigate(screen, emptyMap())
     }
 
-    BackHandler(uiState.selectMode) {
-        dataViewModel.exitSelectMode()
+    BackHandler(enabled = true) {
+        when {
+            uiState.showDeleteConfirm -> {
+                dataViewModel.hideDeleteAllConfirm()
+            }
+
+            uiState.deleteTargetId != null -> {
+                dataViewModel.cancelDeleteItem()
+            }
+
+            uiState.selectMode -> {
+                dataViewModel.exitSelectMode()
+            }
+
+            else -> {
+                navigateTo(Screen.Home)
+            }
+        }
     }
 
     LaunchedEffect(Unit) {

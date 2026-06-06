@@ -80,7 +80,7 @@ fun MainScreen() {
         }
     }
 
-    val showBottomBar = false
+    val showBottomBar = true
 
     Scaffold(
         bottomBar = {
