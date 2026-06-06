@@ -1,12 +1,9 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.samsung.smartclipboard.presentation.AppColors
+import com.samsung.smartclipboard.presentation.BlueGradient
+import com.samsung.smartclipboard.presentation.Screen
 
 @Composable
 fun HomeScreen(navigate: (Screen, Map<String, String>) -> Unit) {
