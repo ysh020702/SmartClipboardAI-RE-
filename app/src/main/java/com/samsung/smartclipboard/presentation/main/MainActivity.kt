@@ -10,7 +10,9 @@ import androidx.compose.runtime.setValue
 import com.samsung.smartclipboard.presentation.SmartClipboardTheme
 import com.samsung.smartclipboard.presentation.main.permission.MediaPermissionHelper
 import com.samsung.smartclipboard.presentation.main.permission.PermissionScreen
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private var hasMediaPermission by mutableStateOf(false)
