@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -37,10 +37,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.samsung.smartclipboard.presentation.ActionReviewScreen
+import com.samsung.smartclipboard.presentation.AiSuggestScreen
+import com.samsung.smartclipboard.presentation.AnalyzingScreen
+import com.samsung.smartclipboard.presentation.AppColors
+import com.samsung.smartclipboard.presentation.DataScreen
+import com.samsung.smartclipboard.presentation.GradientButton
+import com.samsung.smartclipboard.presentation.HistoryScreen
+import com.samsung.smartclipboard.presentation.HomeScreen
+import com.samsung.smartclipboard.presentation.NavTab
+import com.samsung.smartclipboard.presentation.Screen
+import com.samsung.smartclipboard.presentation.StorageScreen
+import com.samsung.smartclipboard.presentation.TasksScreen
+import com.samsung.smartclipboard.presentation.TopicDetailScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SmartClipboardAIApp() {
+fun SmartClipboardAIApp(
+
+
+) {
+    /*
+    * 페이지 이동을 Navigate 함수가 충괄하고, 하위 페이지에 전달함
+    * 최상위 컴포즈 함수
+    * */
+    
+    
     var activeTab by remember { mutableStateOf(NavTab.Home) }
     var screen by remember { mutableStateOf(Screen.Home) }
     var navData by remember { mutableStateOf<Map<String, String>>(emptyMap()) }

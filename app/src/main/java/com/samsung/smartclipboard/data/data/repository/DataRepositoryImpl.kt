@@ -3,14 +3,14 @@ package com.samsung.smartclipboard.data.repository
 import android.util.Log
 import com.samsung.smartclipboard.data.ai.DefaultSourceExtractor
 import com.samsung.smartclipboard.data.ai.GeminiTopicAgent
+import com.samsung.smartclipboard.database.dao.DataItemDao
+import com.samsung.smartclipboard.database.dao.TopicDao
+import com.samsung.smartclipboard.database.dao.TopicSummaryRow
 import com.samsung.smartclipboard.database.entity.DataItemEntity
 import com.samsung.smartclipboard.database.entity.TopicActionEntity
 import com.samsung.smartclipboard.database.entity.TopicAnalysisEntity
 import com.samsung.smartclipboard.database.entity.TopicEntity
 import com.samsung.smartclipboard.database.entity.TopicItemCrossRefEntity
-import com.samsung.smartclipboard.database.dao.DataItemDao
-import com.samsung.smartclipboard.database.dao.TopicDao
-import com.samsung.smartclipboard.database.dao.TopicSummaryRow
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
 import com.samsung.smartclipboard.domain.model.Topic

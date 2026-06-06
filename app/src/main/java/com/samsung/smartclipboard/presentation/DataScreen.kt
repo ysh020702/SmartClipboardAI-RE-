@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CameraAlt
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.samsung.smartclipboard.presentation.main.permission.MediaPermissionHelper
 
 @Composable
 fun DataScreen(
@@ -79,6 +81,11 @@ fun DataScreen(
     var pickerSelected by remember { mutableStateOf(sampleItems.map { it.id }.toSet()) }
     var allowedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
 
+    val navigateWithData = navigate
+    fun navigate(screen: Screen) {
+        navigateWithData(screen, emptyMap())
+    }
+
     fun enterSelect() {
         selectMode = true
         selected = emptySet()
@@ -88,6 +95,11 @@ fun DataScreen(
         selectMode = false
         selected = emptySet()
         onSelectModeChange(false)
+    }
+
+    fun makePermission(){
+        val granted = MediaPermissionHelper.hasImageReadPermission(context)
+        permission = PermissionStatus.Granted
     }
 
     BackHandler(selectMode) { exitSelect() }
@@ -127,6 +139,7 @@ fun DataScreen(
                     items = items.filterNot { it.id in selected }
                     exitSelect()
                 },
+                onBackHome = { navigate(Screen.Home) },
                 onToggleSelect = { if (selectMode) exitSelect() else enterSelect() },
             )
 
@@ -156,7 +169,7 @@ fun DataScreen(
                     permission = permission,
                     allowedCount = allowedIds.size,
                     onGrantAll = { permission = PermissionStatus.Granted },
-                    onGrantPartial = { permission = PermissionStatus.Selecting },
+                    onGrantPartial = { makePermission() },
                     onDeny = { permission = PermissionStatus.Denied },
                     onReset = { permission = PermissionStatus.Unknown },
                 )
@@ -283,6 +296,7 @@ fun DataHeader(
     visibleCount: Int,
     onDeleteAll: () -> Unit,
     onDeleteSelected: () -> Unit,
+    onBackHome: () -> Unit,
     onToggleSelect: () -> Unit,
 ) {
     Column(
@@ -293,7 +307,17 @@ fun DataHeader(
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.width(72.dp)) {
+            Row(
+                Modifier.width(116.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                IconButtonPlain(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    tint = AppColors.Slate500,
+                    bg = Color(0xFFF1F5F9),
+                    onClick = onBackHome,
+                )
                 when {
                     !selectMode -> DangerSmallButton("전체 삭제", onClick = onDeleteAll)
                     selectedCount > 0 -> DangerSmallButton("삭제", onClick = onDeleteSelected)
@@ -311,7 +335,7 @@ fun DataHeader(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
-            Box(Modifier.width(72.dp), contentAlignment = Alignment.CenterEnd) {
+            Box(Modifier.width(116.dp), contentAlignment = Alignment.CenterEnd) {
                 SmallOutlineButton(if (selectMode) "취소" else "선택", active = selectMode, onClick = onToggleSelect)
             }
         }

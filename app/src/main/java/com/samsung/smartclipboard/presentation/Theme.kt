@@ -27,7 +27,7 @@ val DarkGradient = Brush.linearGradient(listOf(Color(0xFF0F1F3D), Color(0xFF1A36
 
 
 @Composable
-fun SmartClipboardAITheme(content: @Composable () -> Unit) {
+fun SmartClipboardTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = lightColorScheme(
             primary = AppColors.Blue,
