@@ -41,7 +41,7 @@ import com.samsung.smartclipboard.presentation.ActionReviewScreen
 import com.samsung.smartclipboard.presentation.AiSuggestScreen
 import com.samsung.smartclipboard.presentation.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
-import com.samsung.smartclipboard.presentation.DataScreen
+import com.samsung.smartclipboard.presentation.main.data.DataScreen
 import com.samsung.smartclipboard.presentation.GradientButton
 import com.samsung.smartclipboard.presentation.HistoryScreen
 import com.samsung.smartclipboard.presentation.HomeScreen
@@ -53,10 +53,7 @@ import com.samsung.smartclipboard.presentation.TopicDetailScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SmartClipboardAIApp(
-
-
-) {
+fun MainScreen() {
     /*
     * 페이지 이동을 Navigate 함수가 충괄하고, 하위 페이지에 전달함
     * 최상위 컴포즈 함수

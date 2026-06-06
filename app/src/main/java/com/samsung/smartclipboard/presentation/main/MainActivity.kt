@@ -4,24 +4,51 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.samsung.smartclipboard.presentation.SmartClipboardTheme
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.samsung.smartclipboard.presentation.main.permission.MediaPermissionHelper
+import com.samsung.smartclipboard.presentation.main.permission.PermissionScreen
 
 class MainActivity : ComponentActivity() {
-    private val permissionResults = MutableStateFlow<Map<String, Boolean>?>(null)
+
+    private var hasMediaPermission by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        permissionResults.value = permissions
+    ) {
+        hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
+
         setContent {
             SmartClipboardTheme {
-                SmartClipboardAIApp()
+                if (hasMediaPermission) {
+                    MainScreen()
+                } else {
+                    PermissionScreen(
+                        onRequestPermission = {
+                            requestMediaPermission()
+                        }
+                    )
+                }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
+    }
+
+    private fun requestMediaPermission() {
+        permissionLauncher.launch(
+            MediaPermissionHelper.requiredMediaPermissions()
+        )
     }
 }
