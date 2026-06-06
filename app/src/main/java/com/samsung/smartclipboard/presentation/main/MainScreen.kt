@@ -29,70 +29,65 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samsung.smartclipboard.presentation.ActionReviewScreen
 import com.samsung.smartclipboard.presentation.AiSuggestScreen
 import com.samsung.smartclipboard.presentation.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
-import com.samsung.smartclipboard.presentation.main.data.DataScreen
 import com.samsung.smartclipboard.presentation.GradientButton
 import com.samsung.smartclipboard.presentation.HistoryScreen
-import com.samsung.smartclipboard.presentation.HomeScreen
+import com.samsung.smartclipboard.presentation.main.home.HomeScreen
 import com.samsung.smartclipboard.presentation.NavTab
 import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
 import com.samsung.smartclipboard.presentation.TopicDetailScreen
+import com.samsung.smartclipboard.presentation.main.data.DataScreen
+
+@Composable
+fun MainScreen(
+    viewModel: MainViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    MainScreenContent(
+        uiState = uiState,
+        onNavigate = viewModel::navigate,
+        onBottomTabSelected = viewModel::onBottomTabSelected,
+        onDataSelectModeChanged = viewModel::onDataSelectModeChanged,
+        onOpenAnalysisSheet = viewModel::openAnalysisSheet,
+        onDismissAnalysisSheet = viewModel::dismissAnalysisSheet,
+        onSheetTopicNameChanged = viewModel::onSheetTopicNameChanged,
+        onConfirmAnalysis = viewModel::confirmAnalysis,
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
-    /*
-    * 페이지 이동을 Navigate 함수가 충괄하고, 하위 페이지에 전달함
-    * 최상위 컴포즈 함수
-    * */
-    
-    
-    var activeTab by remember { mutableStateOf(NavTab.Home) }
-    var screen by remember { mutableStateOf(Screen.Home) }
-    var navData by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var dataSelectMode by remember { mutableStateOf(false) }
-    var bottomSheetVisible by remember { mutableStateOf(false) }
-    var sheetCount by remember { mutableStateOf(0) }
-    var sheetTopicName by remember { mutableStateOf("") }
+private fun MainScreenContent(
+    uiState: MainUiState,
+    onNavigate: (Screen, Map<String, String>) -> Unit,
+    onBottomTabSelected: (NavTab) -> Unit,
+    onDataSelectModeChanged: (Boolean) -> Unit,
+    onOpenAnalysisSheet: (Int, String) -> Unit,
+    onDismissAnalysisSheet: () -> Unit,
+    onSheetTopicNameChanged: (String) -> Unit,
+    onConfirmAnalysis: () -> Unit,
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    fun navigate(target: Screen, data: Map<String, String> = emptyMap()) {
-        screen = target
-        navData = data
-        when (target) {
-            Screen.Home -> activeTab = NavTab.Home
-            Screen.Data -> activeTab = NavTab.Data
-            Screen.Tasks -> activeTab = NavTab.Tasks
-            else -> Unit
-        }
-    }
-
-    val showBottomBar = true
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
-                BottomNavigation(activeTab = activeTab) { tab ->
-                    when (tab) {
-                        NavTab.Home -> navigate(Screen.Home)
-                        NavTab.Data -> navigate(Screen.Data)
-                        NavTab.Tasks -> navigate(Screen.Tasks)
-                    }
-                }
-            }
+            BottomNavigation(
+                activeTab = uiState.activeTab,
+                onSelect = onBottomTabSelected,
+            )
         },
         containerColor = AppColors.Surface,
     ) { padding ->
@@ -102,31 +97,55 @@ fun MainScreen() {
                 .padding(padding)
                 .background(AppColors.Surface),
         ) {
-            when (screen) {
-                Screen.Home -> HomeScreen(navigate = ::navigate)
-                Screen.Data -> DataScreen(
-                    navigate = ::navigate,
-                    onSelectModeChange = { dataSelectMode = it },
-                    onOpenSheet = { count, title ->
-                        sheetCount = count
-                        sheetTopicName = title
-                        bottomSheetVisible = true
-                    },
+            when (uiState.screen) {
+                Screen.Home -> HomeScreen(
+                    navigate = onNavigate,
                 )
-                Screen.Tasks -> TasksScreen(navigate = ::navigate)
-                Screen.History -> HistoryScreen(navigate = ::navigate)
-                Screen.Storage -> StorageScreen(navigate = ::navigate)
-                Screen.AiSuggest -> AiSuggestScreen(navigate = ::navigate, data = navData)
-                Screen.Analyzing -> AnalyzingScreen(navigate = ::navigate, data = navData)
-                Screen.TopicDetail -> TopicDetailScreen(navigate = ::navigate, data = navData)
-                Screen.ActionReview -> ActionReviewScreen(navigate = ::navigate, data = navData)
+
+                Screen.Data -> DataScreen(
+                    navigate = onNavigate,
+                    onSelectModeChange = onDataSelectModeChanged,
+                    onOpenSheet = onOpenAnalysisSheet,
+                )
+
+                Screen.Tasks -> TasksScreen(
+                    navigate = onNavigate,
+                )
+
+                Screen.History -> HistoryScreen(
+                    navigate = onNavigate,
+                )
+
+                Screen.Storage -> StorageScreen(
+                    navigate = onNavigate,
+                )
+
+                Screen.AiSuggest -> AiSuggestScreen(
+                    navigate = onNavigate,
+                    data = uiState.navData,
+                )
+
+                Screen.Analyzing -> AnalyzingScreen(
+                    navigate = onNavigate,
+                    data = uiState.navData,
+                )
+
+                Screen.TopicDetail -> TopicDetailScreen(
+                    navigate = onNavigate,
+                    data = uiState.navData,
+                )
+
+                Screen.ActionReview -> ActionReviewScreen(
+                    navigate = onNavigate,
+                    data = uiState.navData,
+                )
             }
         }
     }
 
-    if (bottomSheetVisible) {
+    if (uiState.bottomSheetVisible) {
         ModalBottomSheet(
-            onDismissRequest = { bottomSheetVisible = false },
+            onDismissRequest = onDismissAnalysisSheet,
             sheetState = sheetState,
             containerColor = Color.White,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
@@ -138,40 +157,47 @@ fun MainScreen() {
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text("분석 시작", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = AppColors.Slate800)
-                Text("${sheetCount}개의 데이터를 AI 에이전트로 분석합니다.", fontSize = 12.sp, color = AppColors.Slate500)
+                Text(
+                    text = "분석 시작",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AppColors.Slate800,
+                )
+
+                Text(
+                    text = "${uiState.sheetCount}개의 데이터를 AI 에이전트로 분석합니다.",
+                    fontSize = 12.sp,
+                    color = AppColors.Slate500,
+                )
+
                 OutlinedTextField(
-                    value = sheetTopicName,
-                    onValueChange = { sheetTopicName = it },
+                    value = uiState.sheetTopicName,
+                    onValueChange = onSheetTopicNameChanged,
                     label = { Text("주제명") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                 )
+
                 GradientButton(
                     text = "분석",
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        bottomSheetVisible = false
-                        dataSelectMode = false
-                        navigate(
-                            Screen.Analyzing,
-                            mapOf(
-                                "selectedCount" to sheetCount.toString(),
-                                "topicName" to sheetTopicName,
-                            ),
-                        )
-                    },
+                    onClick = onConfirmAnalysis,
                 )
+
                 Button(
-                    onClick = { bottomSheetVisible = false },
+                    onClick = onDismissAnalysisSheet,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Surface, contentColor = AppColors.Slate500),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.Surface,
+                        contentColor = AppColors.Slate500,
+                    ),
                     border = BorderStroke(1.dp, AppColors.Slate200),
                 ) {
                     Text("취소")
                 }
+
                 Spacer(Modifier.height(4.dp))
             }
         }
@@ -179,7 +205,10 @@ fun MainScreen() {
 }
 
 @Composable
-fun BottomNavigation(activeTab: NavTab, onSelect: (NavTab) -> Unit) {
+fun BottomNavigation(
+    activeTab: NavTab,
+    onSelect: (NavTab) -> Unit,
+) {
     NavigationBar(
         containerColor = Color.White.copy(alpha = 0.98f),
         tonalElevation = 8.dp,
@@ -189,12 +218,23 @@ fun BottomNavigation(activeTab: NavTab, onSelect: (NavTab) -> Unit) {
             NavTab.Data to ("데이터" to Icons.Default.Storage),
             NavTab.Tasks to ("작업" to Icons.Default.Work),
         )
+
         items.forEach { (tab, pair) ->
             NavigationBarItem(
                 selected = activeTab == tab,
                 onClick = { onSelect(tab) },
-                icon = { Icon(pair.second, contentDescription = pair.first) },
-                label = { Text(pair.first, fontSize = 11.sp) },
+                icon = {
+                    Icon(
+                        imageVector = pair.second,
+                        contentDescription = pair.first,
+                    )
+                },
+                label = {
+                    Text(
+                        text = pair.first,
+                        fontSize = 11.sp,
+                    )
+                },
             )
         }
     }
