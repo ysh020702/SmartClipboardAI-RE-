@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.topicaisuggest
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,14 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,9 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,9 +45,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.samsung.smartclipboard.presentation.AppColors
+import com.samsung.smartclipboard.presentation.DarkGradient
+import com.samsung.smartclipboard.presentation.Pill
+import com.samsung.smartclipboard.presentation.Screen
+import kotlinx.coroutines.flow.collectLatest
 
-data class SuggestedTopic(
+data class TopicAiSuggestionCardUi(
     val id: String,
     val title: String,
     val description: String,
@@ -65,28 +64,51 @@ data class SuggestedTopic(
     val accentBg: Color,
 )
 
-val suggestedTopics = listOf(
-    SuggestedTopic("1", "회의 자료", "스크린샷과 메모를 초안, 일정, 알림으로 정리해요.", listOf("스크린샷 3개", "메모 2개"), listOf("업무", "회의"), Icons.Default.Description, AppColors.Blue, AppColors.BlueSoft),
-    SuggestedTopic("2", "제주 여행 계획", "숙소, 장소, 링크를 모아 여행 가이드로 정리해요.", listOf("스크린샷 4개", "링크 3개"), listOf("여행", "일정"), Icons.Default.Flight, AppColors.Cyan, Color(0xFFECFEFF)),
-    SuggestedTopic("3", "레시피 모음", "저장한 이미지에서 재료와 순서를 뽑아 정리해요.", listOf("스크린샷 6개"), listOf("레시피", "음식"), Icons.Default.CameraAlt, AppColors.Green, Color(0xFFECFDF5)),
-    SuggestedTopic("4", "쇼핑 위시리스트", "저장한 상품 링크와 캡처를 비교해요.", listOf("스크린샷 2개", "링크 6개"), listOf("쇼핑"), Icons.Default.ShoppingCart, Color(0xFFD97706), Color(0xFFFFFBEB)),
-    SuggestedTopic("5", "개발 참고자료", "코드 캡처와 문서를 주제별로 묶어요.", listOf("스크린샷 5개", "링크 4개"), listOf("개발", "코드"), Icons.Default.Code, Color(0xFF7C3AED), Color(0xFFF5F3FF)),
-)
+fun TopicAiSuggestionUi.toTopicAiSuggestionCardUi(): TopicAiSuggestionCardUi {
+    val confidencePercent = (confidence.coerceIn(0.0f, 1.0f) * 100).toInt()
+    return TopicAiSuggestionCardUi(
+        id = id,
+        title = title,
+        description = description,
+        dataTypes = listOf("자료 ${itemCount}개", "신뢰도 $confidencePercent%"),
+        tags = listOf(clusterLabel).filter { it.isNotBlank() },
+        icon = Icons.Default.Description,
+        color = AppColors.Blue,
+        accentBg = AppColors.BlueSoft,
+    )
+}
 
 @Composable
-fun AiSuggestScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Map<String, String>) {
+fun TopicAiSuggestScreen(
+    navigate: (Screen, Map<String, String>) -> Unit,
+    data: Map<String, String>,
+    viewModel: TopicAiSuggestViewModel = hiltViewModel(),
+) {
     val skipLoading = data["skipLoading"] == "true"
     val query = data["query"].orEmpty()
-    var loading by remember { mutableStateOf(!skipLoading) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(skipLoading) {
-        if (!skipLoading) {
-            delay(1600)
-            loading = false
+    LaunchedEffect(query, skipLoading) {
+        viewModel.loadSuggestions(query = query, forceRefresh = !skipLoading)
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is TopicAiSuggestEffect.NavigateToTopicDetail -> navigate(
+                    Screen.TopicDetail,
+                    mapOf(
+                        "topicId" to effect.topicId.toString(),
+                        "topicTitle" to effect.topicTitle,
+                        "from" to "aiSuggest",
+                        "query" to effect.query,
+                    ),
+                )
+            }
         }
     }
 
-    if (loading) {
+    if (uiState.isLoading) {
         AiSuggestLoading(query = query) { navigate(Screen.Home, emptyMap()) }
         return
     }
@@ -128,27 +150,38 @@ fun AiSuggestScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Map<S
                 ) {
                     Text("분석 결과", color = Color(0xFF93C5FD), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        if (query.isBlank()) "수집한 전체 데이터에서 ${suggestedTopics.size}개의 주제를 찾았어요."
-                        else "\"$query\"에 맞는 주제 ${suggestedTopics.size}개를 찾았어요.",
+                        if (query.isBlank()) "수집한 전체 데이터에서 ${uiState.suggestionCount}개의 주제를 찾았어요."
+                        else "\"$query\"에 맞는 주제 ${uiState.suggestionCount}개를 찾았어요.",
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    Text("하나를 선택하면 AI가 실행 초안을 준비해요.", color = Color(0xFFA5B4FC), fontSize = 10.sp)
+                    Text(
+                        if (uiState.isCreatingTopic) "선택한 주제로 실행 초안을 준비하고 있어요."
+                        else "하나를 선택하면 AI가 실행 초안을 준비해요.",
+                        color = Color(0xFFA5B4FC),
+                        fontSize = 10.sp,
+                    )
                 }
             }
         }
-        itemsIndexed(suggestedTopics) { _, topic ->
-            SuggestedTopicCard(topic = topic) {
-                navigate(
-                    Screen.TopicDetail,
-                    mapOf(
-                        "topicId" to topic.id,
-                        "topicTitle" to topic.title,
-                        "from" to "aiSuggest",
-                        "query" to query,
-                    ),
+        if (uiState.errorMessage != null) {
+            item {
+                Text(
+                    text = uiState.errorMessage.orEmpty(),
+                    color = AppColors.Slate400,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
                 )
+            }
+        }
+        itemsIndexed(uiState.suggestions) { _, suggestion ->
+            SuggestedTopicCard(
+                topic = suggestion.toTopicAiSuggestionCardUi(),
+                enabled = uiState.canSelectSuggestion,
+                isCreating = uiState.isCreatingSuggestion(suggestion.id),
+            ) {
+                viewModel.selectSuggestion(suggestion.id)
             }
         }
         item {
@@ -225,12 +258,17 @@ private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
 }
 
 @Composable
-private fun SuggestedTopicCard(topic: SuggestedTopic, onClick: () -> Unit) {
+private fun SuggestedTopicCard(
+    topic: TopicAiSuggestionCardUi,
+    enabled: Boolean,
+    isCreating: Boolean,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.dp, AppColors.Border),
@@ -251,10 +289,24 @@ private fun SuggestedTopicCard(topic: SuggestedTopic, onClick: () -> Unit) {
                 }
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(topic.title, color = AppColors.Slate800, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
+                        Text(
+                            text = topic.title,
+                            color = AppColors.Slate800,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                         Icon(Icons.Default.KeyboardArrowRight, null, tint = AppColors.Slate200, modifier = Modifier.size(16.dp))
                     }
-                    Text(topic.description, color = AppColors.Slate500, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = if (isCreating) "실행 초안 생성 중입니다." else topic.description,
+                        color = AppColors.Slate500,
+                        fontSize = 11.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
             Row(
@@ -262,13 +314,28 @@ private fun SuggestedTopicCard(topic: SuggestedTopic, onClick: () -> Unit) {
                     .fillMaxWidth()
                     .background(Color(0xFFFAFBFF))
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     topic.dataTypes.forEach { Pill(it, topic.accentBg, topic.color) }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    topic.tags.take(2).forEach { Text("#$it", color = AppColors.Slate400, fontSize = 9.sp) }
+                Spacer(Modifier.width(8.dp))
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    topic.tags.take(1).forEach {
+                        Text(
+                            text = "#$it",
+                            color = AppColors.Slate400,
+                            fontSize = 9.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }

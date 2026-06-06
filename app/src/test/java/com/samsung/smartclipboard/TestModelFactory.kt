@@ -6,8 +6,8 @@ import com.samsung.smartclipboard.domain.model.DataCluster
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
+import com.samsung.smartclipboard.domain.model.SuggestedTopic
 import com.samsung.smartclipboard.domain.model.TopicActionType
-import com.samsung.smartclipboard.presentation.SuggestedTopic
 
 object TestModelFactory {
     fun dataItem(

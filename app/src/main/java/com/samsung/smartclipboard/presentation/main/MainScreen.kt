@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samsung.smartclipboard.presentation.ActionReviewScreen
-import com.samsung.smartclipboard.presentation.AiSuggestScreen
+import com.samsung.smartclipboard.presentation.main.topicaisuggest.TopicAiSuggestScreen
 import com.samsung.smartclipboard.presentation.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.GradientButton
@@ -47,7 +47,7 @@ import com.samsung.smartclipboard.presentation.NavTab
 import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
-import com.samsung.smartclipboard.presentation.TopicDetailScreen
+import com.samsung.smartclipboard.presentation.main.topicselection.TopicSelectionScreen
 import com.samsung.smartclipboard.presentation.main.data.DataScreen
 
 @Composable
@@ -120,7 +120,7 @@ private fun MainScreenContent(
                     navigate = onNavigate,
                 )
 
-                Screen.AiSuggest -> AiSuggestScreen(
+                Screen.AiSuggest -> TopicAiSuggestScreen(
                     navigate = onNavigate,
                     data = uiState.navData,
                 )
@@ -130,7 +130,7 @@ private fun MainScreenContent(
                     data = uiState.navData,
                 )
 
-                Screen.TopicDetail -> TopicDetailScreen(
+                Screen.TopicDetail -> TopicSelectionScreen(
                     navigate = onNavigate,
                     data = uiState.navData,
                 )

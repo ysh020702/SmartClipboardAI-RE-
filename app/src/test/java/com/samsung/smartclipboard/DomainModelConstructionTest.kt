@@ -1,7 +1,6 @@
 package com.samsung.smartclipboard
 
 import com.samsung.smartclipboard.domain.model.*
-import com.samsung.smartclipboard.presentation.SuggestedTopic
 import org.junit.Assert.*
 import org.junit.Test
 
