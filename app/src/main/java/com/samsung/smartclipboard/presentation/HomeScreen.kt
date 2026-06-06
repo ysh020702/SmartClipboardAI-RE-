@@ -141,28 +141,16 @@ fun HomeScreen(navigate: (Screen, Map<String, String>) -> Unit) {
                 ),
             )
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { navigate(Screen.AiSuggest, mapOf("query" to query)) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.Blue),
-                ) {
-                    Icon(Icons.Default.Psychology, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("AI 추천", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
-                Button(
-                    onClick = { navigate(Screen.Data, emptyMap()) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.18f), contentColor = Color.White),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.28f)),
-                ) {
-                    Text("데이터 선택", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
+            Button(
+                onClick = { navigate(Screen.AiSuggest, mapOf("query" to query)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.Blue),
+            ) {
+                Icon(Icons.Default.Psychology, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("AI 추천", fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
-
     }
 }
