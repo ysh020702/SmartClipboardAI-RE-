@@ -23,11 +23,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,41 +39,43 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
-import kotlin.collections.get
+
 
 @Composable
-fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Map<String, String>) {
-    val config = actionConfigs[data["actionType"]] ?: actionConfigs.getValue("note")
-    val topicId = data["topicId"] ?: "1"
-    val topicTitle = data["topicTitle"] ?: "스크린샷 모음"
-    val from = data["from"].orEmpty()
-    val query = data["query"].orEmpty()
-    val backData = mapOf("topicId" to topicId, "topicTitle" to topicTitle, "from" to from, "query" to query)
+fun ActionReviewScreen(
+    navigate: (Screen, Map<String, String>) -> Unit,
+    data: Map<String, String>,
+    viewModel: ActionReviewViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    var title by remember { mutableStateOf(config.defaultTitle) }
-    var body by remember { mutableStateOf(config.defaultBody) }
-    var editing by remember { mutableStateOf(false) }
-    var input by remember { mutableStateOf("") }
-    var typing by remember { mutableStateOf(false) }
-    var executed by remember { mutableStateOf(false) }
-    var version by remember { mutableStateOf(1) }
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(ActionReviewIntent.Initialize(data))
+    }
 
-    if (executed) {
+    val backData = mapOf(
+        "topicId" to uiState.topicId,
+        "topicTitle" to uiState.topicTitle,
+        "from" to uiState.from,
+        "query" to uiState.query
+    )
+
+    if (uiState.isExecuted) {
         LaunchedEffect(Unit) {
             delay(1000)
             navigate(Screen.TopicDetail, backData)
         }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,6 +99,21 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
         return
     }
 
+    ActionReviewScreenContent(
+        uiState = uiState,
+        onIntent = viewModel::onIntent,
+        onBack = { navigate(Screen.TopicDetail, backData) }
+    )
+}
+
+@Composable
+fun ActionReviewScreenContent(
+    uiState: ActionReviewUiState,
+    onIntent: (ActionReviewIntent) -> Unit,
+    onBack: () -> Unit
+) {
+    val config = actionConfigs[uiState.actionType] ?: actionConfigs.getValue("note")
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -108,7 +125,7 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
-                    onClick = { navigate(Screen.TopicDetail, backData) },
+                    onClick = onBack,
                     modifier = Modifier.size(36.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9), contentColor = AppColors.Slate500),
@@ -133,7 +150,7 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
             }
         }
 
-        if (version > 1) {
+        if (uiState.version > 1) {
             item {
                 Row(
                     modifier = Modifier
@@ -146,7 +163,7 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
                 ) {
                     Icon(Icons.Default.Replay, null, tint = config.color, modifier = Modifier.size(13.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("수정된 버전 $version", color = config.color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("수정된 버전 ${uiState.version}", color = config.color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -160,17 +177,27 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     FieldBlock("제목") {
-                        if (editing) {
-                            OutlinedTextField(value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                        if (uiState.isEditing) {
+                            OutlinedTextField(
+                                value = uiState.title,
+                                onValueChange = { onIntent(ActionReviewIntent.UpdateTitle(it)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
                         } else {
-                            ReadOnlyBox { Text(title, color = AppColors.Slate800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+                            ReadOnlyBox { Text(uiState.title, color = AppColors.Slate800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
                         }
                     }
                     FieldBlock("본문") {
-                        if (editing) {
-                            OutlinedTextField(value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth(), minLines = 7)
+                        if (uiState.isEditing) {
+                            OutlinedTextField(
+                                value = uiState.body,
+                                onValueChange = { onIntent(ActionReviewIntent.UpdateBody(it)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 7
+                            )
                         } else {
-                            ReadOnlyBox { Text(body, color = AppColors.Slate800, fontSize = 11.sp, lineHeight = 17.sp) }
+                            ReadOnlyBox { Text(uiState.body, color = AppColors.Slate800, fontSize = 11.sp, lineHeight = 17.sp) }
                         }
                     }
                 }
@@ -196,7 +223,7 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
                         }
                         Spacer(Modifier.width(8.dp))
                         Text("AI에게 수정 요청", color = config.color, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                        if (typing) Text("  ...", color = config.color, fontSize = 12.sp)
+                        if (uiState.isRefining) Text("  ...", color = config.color, fontSize = 12.sp)
                     }
                     Row(
                         modifier = Modifier
@@ -204,16 +231,13 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        listOf("짧게", "요약만", "제목 변경", "번역", "더 친근하게").forEach { suggestion ->
+                        QuickRefineAction.values().forEach { suggestion ->
                             Text(
-                                suggestion,
+                                suggestion.label,
                                 modifier = Modifier
                                     .background(config.color.copy(alpha = 0.09f), RoundedCornerShape(20.dp))
-                                    .clickable(enabled = !typing) {
-                                        typing = true
-                                        version += 1
-                                        body = "$body\n\n[$suggestion 적용됨]"
-                                        typing = false
+                                    .clickable(enabled = !uiState.isRefining) {
+                                        onIntent(ActionReviewIntent.QuickRefine(suggestion))
                                     }
                                     .padding(horizontal = 12.dp, vertical = 7.dp),
                                 color = config.color,
@@ -230,11 +254,12 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TextField(
-                            value = input,
-                            onValueChange = { input = it },
+                            value = uiState.refineInput,
+                            onValueChange = { onIntent(ActionReviewIntent.RefineFeedbackChanged(it)) },
                             placeholder = { Text("수정 요청을 입력하세요", fontSize = 12.sp) },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
+                            enabled = !uiState.isRefining,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
@@ -243,19 +268,16 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
                             ),
                         )
                         Button(
-                            onClick = {
-                                if (input.isNotBlank()) {
-                                    version += 1
-                                    body = "$body\n\n[수정 요청: $input]"
-                                    input = ""
-                                }
-                            },
+                            onClick = { onIntent(ActionReviewIntent.StartRefinement) },
                             modifier = Modifier.size(34.dp),
                             shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = if (input.isBlank()) AppColors.Slate200 else config.color),
+                            enabled = uiState.refineInput.isNotBlank() && !uiState.isRefining,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (uiState.refineInput.isBlank()) AppColors.Slate200 else config.color
+                            ),
                             contentPadding = PaddingValues(0.dp),
                         ) {
-                            Icon(Icons.Default.Send, null, tint = if (input.isBlank()) AppColors.Slate400 else Color.White, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Send, null, tint = if (uiState.refineInput.isBlank()) AppColors.Slate400 else Color.White, modifier = Modifier.size(14.dp))
                         }
                     }
                 }
@@ -265,10 +287,7 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
-                    onClick = {
-                        editing = !editing
-                        if (!editing) version += 1
-                    },
+                    onClick = { onIntent(ActionReviewIntent.ToggleEditMode) },
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = config.color),
@@ -276,14 +295,14 @@ fun ActionReviewScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Ma
                 ) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(if (editing) "완료" else "편집", fontWeight = FontWeight.Bold)
+                    Text(if (uiState.isEditing) "완료" else "편집", fontWeight = FontWeight.Bold)
                 }
                 Button(
-                    onClick = { executed = true },
-                    enabled = !editing,
+                    onClick = { onIntent(ActionReviewIntent.ConfirmExecution) },
+                    enabled = !uiState.isEditing && !uiState.isRefining,
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (editing) AppColors.Slate200 else config.color, contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (uiState.isEditing) AppColors.Slate200 else config.color, contentColor = Color.White),
                 ) {
                     Icon(Icons.Default.Check, null, modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(6.dp))
