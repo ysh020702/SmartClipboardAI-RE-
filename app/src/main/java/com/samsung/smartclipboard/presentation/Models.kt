@@ -45,7 +45,6 @@ data class ActionConfig(
 
 data class ChatMessage(val id: String, val role: MessageRole, val text: String)
 enum class MessageRole { Ai, User }
-data class DraftVersion(val id: Int, val label: String, val title: String, val body: String)
 
 val sampleItems = listOf(
     ClipboardItem("1", "회의자료_스크린샷.jpg", "스크린샷", "이미지", "5월 26일 09:12", AppColors.Blue, "회의 자료", "주간 업무 보고, 2분기 목표 달성률 78%, 대비 현황 요약"),

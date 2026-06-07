@@ -1,6 +1,5 @@
 package com.samsung.smartclipboard.gemini
 
-
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
@@ -35,11 +34,9 @@ class GeminiRefineAgent(
         val targetActions = currentActions.take(5)
 
         return runCatching {
-            // 1. 프롬프트 생성 및 Gemini 실행, 그리고 파싱
             val prompt = buildPrompt(topicQuery, plan, targetItems, targetActions, feedback)
             val actions = parseActions(geminiManager.run(prompt), targetItems)
 
-            // 2. 결과 검증 (중복 선언되어 있던 validate 로직을 require 블록 하나로 통합)
             val selectedIdSet = targetItems.map { it.item.id }.toSet()
             require(actions.size in 1..5 && actions.all { action ->
                 action.confidence in 0.0f..1.0f &&
@@ -58,24 +55,32 @@ class GeminiRefineAgent(
     ): String = """
         너는 Android 앱의 작업 계획을 보완하는 비서다.
         사용자가 이미 선택한 DataItem과 현재 ActionDraft 후보를 보고,
-        사용자 피드백에 맞게 작업 후보를 보완하거나 재정렬해라.
+        사용자 피드백에 맞게 작업 후보를 보완해라.
+
+        ## 핵심 규칙 (가장 중요)
+        - '현재 작업 후보'의 title과 body가 사용자가 보고 있는 **가장 최신 버전의 텍스트**다. 
+        - 무조건 이 '현재 작업 후보'의 내용을 베이스로 하여 피드백을 적용해라.
+        - 원본 DataItem을 보고 글을 처음부터 완전히 새로 작성(초기화)하지 마라. 기존 문맥과 내용을 최대한 유지하면서 요청받은 부분만 보완해라.
+
+        ## 언어 유지 및 번역 규칙 (★ 매우 중요)
+        - **언어 상태 유지**: 피드백에 명시적인 번역 요청(예: "영어로 번역", "Translate")이 없다면, **무조건 '현재 작업 후보'에 작성되어 있는 언어(한국어, 영어 등)를 그대로 유지**해라. 
+          (예: 현재 제목과 본문이 영어 상태인데 "더 간결하게"라는 피드백을 받았다면, 한국어로 바꾸지 말고 영어 상태 그대로 문장을 간결하게 다듬어야 한다.)
+        - **번역 요청인 경우만 변경**: 피드백이 특정 언어로의 번역을 명시적으로 요구하는 경우에만 해당 언어로 전체 텍스트를 전환해라. 
+        - 단, AI의 작업 이유를 나타내는 `reason` 필드는 사용자의 이해를 위해 어떤 상황이든 항상 **한국어 1문장**으로 작성해라.
 
         ## 반드시 지킬 규칙
         - 응답은 반드시 JSON object 하나만 출력한다.
         - markdown 코드 펜스, 설명문, 주석을 절대 포함하지 마라.
         - 새 DataItem을 만들지 마라.
         - 아래 sourceItemId 목록 외의 id를 절대 반환하지 마라.
-        - Android Intent나 도구 실행을 직접 제안하지 말고 앱 내부 ActionDraft 후보만 생성해라.
-        - title, body, reason은 한국어로 작성해라. (단, 번역 요청은 제외)
         - body는 사용자가 편집 가능한 초안 수준으로 작성해라.
-        - 기존 action을 완전히 버리기보다 피드백을 반영해 보완/재정렬해라.
         - 개인정보, URL, 주소, 연락처 등 민감한 값을 불필요하게 그대로 재출력하지 마라.
 
         ## 퀵 액션 피드백 처리 규칙
-        - "더 간결하게" / "짧게": body를 절반 이하로 줄이고, 불필요한 설명·수식어를 제거하라. 핵심 문장만 남겨라.
-        - "핵심만 요약": body를 3~5개의 핵심 포인트로만 재구성하라. 배경 설명은 빼라.
-        - "제목 바꿔줘": title을 더 직관적이고 이해하기 쉬운 표현으로 바꿔라. body는 그대로 유지하라.
-        - "영어로 번역": title과 body를 모두 자연스러운 영어로 번역하라. reason은 한국어로 유지하라.
+        - "더 간결하게" / "짧게": 현재 body를 절반 이하로 줄이고, 불필요한 설명·수식어를 제거하라. 핵심 문장만 남겨라. (현재 언어 유지)
+        - "핵심만 요약": 현재 body를 3~5개의 핵심 포인트로만 재구성하라. 배경 설명은 빼라. (현재 언어 유지)
+        - "제목 바꿔줘": title을 더 직관적이고 이해하기 쉬운 표현으로 바꿔라. body는 그대로 유지하라. (현재 언어 유지)
+        - "영어로 번역": 현재 title과 body를 모두 자연스러운 영어로 번역하라.
 
         ## 사용 가능한 sourceItemId 목록
         ${items.joinToString(", ") { it.item.id.toString() }}
@@ -89,9 +94,9 @@ class GeminiRefineAgent(
             {
               "type": "SUMMARY",
               "confidence": 0.86,
-              "reason": "사용자 피드백에 따라 더 짧은 요약 중심으로 보완했습니다.",
-              "title": "선택한 자료 짧게 요약",
-              "body": "선택된 자료의 핵심만 간단히 정리합니다.",
+              "reason": "사용자 피드백에 따라 기존 내용을 보완했습니다.",
+              "title": "Action Title",
+              "body": "Action Body content...",
               "payload": {},
               "sourceItemIds": [1, 2, 3]
             }
@@ -102,18 +107,18 @@ class GeminiRefineAgent(
         - actions: 1~5개
         - type: 위 type 목록 중 하나만 사용
         - confidence: 0.0~1.0
-        - reason: 한국어 1문장
-        - title: 한국어 짧은 제목
-        - body: 편집 가능한 초안
+        - reason: 무조건 한국어 1문장 (작업 수행 이유 설명)
+        - title: 피드백 및 현재 언어(컨텍스트)가 반영된 짧은 제목
+        - body: 피드백 및 현재 언어(컨텍스트)가 반영된 편집 가능한 초안
         - payload: JSON object, 없으면 {}
         - sourceItemIds: 위 목록에 있는 id만 사용
 
         ## 사용자 주제: $topicQuery
         ## 검색 키워드: ${plan.keywords.joinToString(", ").ifBlank { "없음" }}
         ## 사용자 피드백
-        ${feedback.take(1000)}
+        $feedback
 
-        ## 선택된 아이템 (${items.size}개)
+        ## 선택된 아이템 (${items.size}개) - 참고용 원본 데이터
         ${items.joinToString(",\n", "[\n", "\n]") { c -> """
           {
             "id": ${c.item.id},
@@ -127,14 +132,14 @@ class GeminiRefineAgent(
           }
         """.trimIndent() }}
 
-        ## 현재 작업 후보
+        ## 현재 작업 후보 (★ 이 내용의 언어와 본문을 베이스로 수정할 것)
         ${actions.joinToString(",\n", "[\n", "\n]") { a -> """
           {
             "type": "${a.type.name}",
             "confidence": ${a.confidence},
             "reason": "${escapeJson(a.reason)}",
             "title": "${escapeJson(a.title)}",
-            "body": "${escapeJson(a.body.take(500))}",
+            "body": "${escapeJson(a.body.take(4000))}",
             "sourceItemIds": [${a.sourceItemIds.joinToString()}]
           }
         """.trimIndent() }}

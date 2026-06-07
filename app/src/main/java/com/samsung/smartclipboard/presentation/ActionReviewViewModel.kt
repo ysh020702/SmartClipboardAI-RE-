@@ -23,10 +23,23 @@ enum class QuickRefineAction(val label: String, val feedback: String) {
     TRANSLATE_EN("영어로 번역", "내용을 영어로 번역해줘. 제목과 본문 모두 영어로 작성해줘.")
 }
 
+data class DraftVersion(
+    val version: Int,
+    val parentVersion: Int,
+    val title: String,
+    val body: String,
+    val description: String
+)
+
 data class ActionReviewUiState(
     val title: String = "",
     val body: String = "",
-    val version: Int = 1,
+
+    val currentVersion: Int = 1,
+    val parentVersion: Int = 0,
+    val history: List<DraftVersion> = emptyList(),
+    val isVersionMenuExpanded: Boolean = false,
+
     val isEditing: Boolean = false,
     val refineInput: String = "",
     val isRefining: Boolean = false,
@@ -52,6 +65,9 @@ sealed interface ActionReviewIntent {
     data object StartRefinement : ActionReviewIntent
     data class QuickRefine(val action: QuickRefineAction) : ActionReviewIntent
     data object CancelRefinement : ActionReviewIntent
+
+    data class RevertToVersion(val version: Int) : ActionReviewIntent
+    data class ToggleVersionMenu(val expanded: Boolean) : ActionReviewIntent
 
     data object ConfirmExecution : ActionReviewIntent
     data object DismissError : ActionReviewIntent
@@ -79,6 +95,8 @@ class ActionReviewViewModel @Inject constructor(
             is ActionReviewIntent.StartRefinement -> startRefinement()
             is ActionReviewIntent.QuickRefine -> onQuickRefine(intent.action)
             is ActionReviewIntent.CancelRefinement -> onCancelRefinement()
+            is ActionReviewIntent.RevertToVersion -> revertToVersion(intent.version)
+            is ActionReviewIntent.ToggleVersionMenu -> _uiState.update { it.copy(isVersionMenuExpanded = intent.expanded) }
             is ActionReviewIntent.ConfirmExecution -> _uiState.update { it.copy(isExecuted = true) }
             is ActionReviewIntent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
         }
@@ -100,10 +118,26 @@ class ActionReviewViewModel @Inject constructor(
     private fun toggleEditMode() {
         _uiState.update { state ->
             val wasEditing = state.isEditing
-            state.copy(
-                isEditing = !wasEditing,
-                version = if (wasEditing) state.version else state.version + 1
-            )
+            if (wasEditing) {
+                val currentHistoryItem = state.history.find { it.version == state.currentVersion }
+                if (currentHistoryItem != null && (currentHistoryItem.title != state.title || currentHistoryItem.body != state.body)) {
+                    val newVersionNum = (state.history.maxOfOrNull { it.version } ?: 1) + 1
+                    val newVersion = DraftVersion(newVersionNum, state.currentVersion, state.title, state.body, "직접 편집됨")
+
+                    updateCurrentDraft(state.title, state.body)
+
+                    state.copy(
+                        isEditing = false,
+                        currentVersion = newVersionNum,
+                        parentVersion = state.currentVersion,
+                        history = state.history + newVersion
+                    )
+                } else {
+                    state.copy(isEditing = false)
+                }
+            } else {
+                state.copy(isEditing = true)
+            }
         }
     }
 
@@ -133,7 +167,6 @@ class ActionReviewViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val topicActions = dataRepository.observeTopicActions(topicId).first()
-
                 val matchedAction = topicActions.find { it.id == actionId }
 
                 if (matchedAction != null) {
@@ -150,10 +183,15 @@ class ActionReviewViewModel @Inject constructor(
                     val topicItems = dataRepository.observeTopicItems(topicId).first()
                     currentSourceItems = topicItems.map { CandidateItem(it, 1.0f, "토픽 내 항목") }
 
+                    val initialVersion = DraftVersion(1, 0, matchedAction.title, matchedAction.body, "원본 초안")
+
                     _uiState.update {
                         it.copy(
                             title = matchedAction.title,
                             body = matchedAction.body,
+                            currentVersion = 1,
+                            parentVersion = 0,
+                            history = listOf(initialVersion),
                             isLoading = false
                         )
                     }
@@ -162,6 +200,26 @@ class ActionReviewViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 setFailed("fetch", e.message ?: "데이터 로드에 실패했습니다.")
+            }
+        }
+    }
+
+    private fun revertToVersion(targetVersionId: Int) {
+        val state = _uiState.value
+        val targetVersion = state.history.find { it.version == targetVersionId }
+
+        if (targetVersion != null) {
+            updateCurrentDraft(targetVersion.title, targetVersion.body)
+
+            _uiState.update {
+                it.copy(
+                    title = targetVersion.title,
+                    body = targetVersion.body,
+                    currentVersion = targetVersion.version,
+                    parentVersion = targetVersion.parentVersion,
+                    isVersionMenuExpanded = false,
+                    isEditing = false
+                )
             }
         }
     }
@@ -203,7 +261,6 @@ class ActionReviewViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // GeminiRefineAgent에 보완 요청
                 val refinedActions = refineAgent.refineActions(tq, pl, sItems, currentActions, feedback).getOrElse { throw it }
 
                 if (refinedActions.isEmpty()) {
@@ -212,13 +269,26 @@ class ActionReviewViewModel @Inject constructor(
                 }
 
                 val refinedDraft = refinedActions.first()
+
                 currentActionDraft = refinedDraft
+
+                val newVersionNum = (_uiState.value.history.maxOfOrNull { it.version } ?: 1) + 1
+                val shortFeedback = if (feedback.length > 10) feedback.substring(0, 10) + "..." else feedback
+                val newVersion = DraftVersion(
+                    version = newVersionNum,
+                    parentVersion = cur.currentVersion,
+                    title = refinedDraft.title,
+                    body = refinedDraft.body,
+                    description = shortFeedback
+                )
 
                 _uiState.update {
                     it.copy(
                         isRefining = false,
                         refineInput = "",
-                        version = it.version + 1,
+                        currentVersion = newVersionNum,
+                        parentVersion = cur.currentVersion,
+                        history = it.history + newVersion,
                         title = refinedDraft.title,
                         body = refinedDraft.body,
                         errorMessage = null
@@ -228,6 +298,19 @@ class ActionReviewViewModel @Inject constructor(
                 setFailed("refine", "AI 보완 중 오류가 발생했습니다: ${e.message}")
             }
         }
+    }
+
+    private fun updateCurrentDraft(newTitle: String, newBody: String) {
+        val original = currentActionDraft ?: return
+        currentActionDraft = AgentActionDraft(
+            type = original.type,
+            confidence = original.confidence,
+            reason = original.reason,
+            title = newTitle,
+            body = newBody,
+            payload = original.payload,
+            sourceItemIds = original.sourceItemIds
+        )
     }
 
     private fun setFailed(step: String, message: String) {

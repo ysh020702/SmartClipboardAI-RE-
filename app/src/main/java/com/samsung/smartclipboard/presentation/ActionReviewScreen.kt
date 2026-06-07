@@ -23,15 +23,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -49,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
-
 
 @Composable
 fun ActionReviewScreen(
@@ -112,6 +115,7 @@ fun ActionReviewScreenContent(
     onIntent: (ActionReviewIntent) -> Unit,
     onBack: () -> Unit
 ) {
+    // actionConfigs 및 AppColors, FieldBlock 등은 기존 환경에 정의되어 있다고 가정
     val config = actionConfigs[uiState.actionType] ?: actionConfigs.getValue("note")
 
     LazyColumn(
@@ -150,20 +154,50 @@ fun ActionReviewScreenContent(
             }
         }
 
-        if (uiState.version > 1) {
+        // 버전 히스토리 컨트롤
+        if (uiState.history.size > 1) {
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(14.dp))
-                        .border(1.dp, config.color.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Default.Replay, null, tint = config.color, modifier = Modifier.size(13.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("수정된 버전 ${uiState.version}", color = config.color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(14.dp))
+                            .border(1.dp, config.color.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
+                            .clickable { onIntent(ActionReviewIntent.ToggleVersionMenu(true)) }
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Default.History, null, tint = config.color, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        val parentText = if (uiState.parentVersion > 0) " (from ver. ${uiState.parentVersion})" else ""
+                        Text(
+                            text = "ver. ${uiState.currentVersion}$parentText",
+                            color = config.color,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(Icons.Default.ArrowDropDown, null, tint = config.color, modifier = Modifier.size(16.dp))
+                    }
+
+                    DropdownMenu(
+                        expanded = uiState.isVersionMenuExpanded,
+                        onDismissRequest = { onIntent(ActionReviewIntent.ToggleVersionMenu(false)) }
+                    ) {
+                        uiState.history.sortedByDescending { it.version }.forEach { versionItem ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "ver. ${versionItem.version} - ${versionItem.description}",
+                                        fontSize = 13.sp,
+                                        fontWeight = if (versionItem.version == uiState.currentVersion) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                onClick = { onIntent(ActionReviewIntent.RevertToVersion(versionItem.version)) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -185,7 +219,7 @@ fun ActionReviewScreenContent(
                                 singleLine = true
                             )
                         } else {
-                            ReadOnlyBox { Text(uiState.title, color = AppColors.Slate800, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+                            ReadOnlyBox { Text(uiState.title, color = AppColors.Slate800, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
                         }
                     }
                     FieldBlock("본문") {
@@ -197,7 +231,7 @@ fun ActionReviewScreenContent(
                                 minLines = 7
                             )
                         } else {
-                            ReadOnlyBox { Text(uiState.body, color = AppColors.Slate800, fontSize = 11.sp, lineHeight = 17.sp) }
+                            ReadOnlyBox { Text(uiState.body, color = AppColors.Slate800, fontSize = 12.sp, lineHeight = 18.sp) }
                         }
                     }
                 }
@@ -222,7 +256,7 @@ fun ActionReviewScreenContent(
                             Icon(Icons.Default.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(12.dp))
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("AI에게 수정 요청", color = config.color, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("현재 내용 기준으로 AI에게 수정 요청", color = config.color, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         if (uiState.isRefining) Text("  ...", color = config.color, fontSize = 12.sp)
                     }
                     Row(
@@ -295,7 +329,7 @@ fun ActionReviewScreenContent(
                 ) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(if (uiState.isEditing) "완료" else "편집", fontWeight = FontWeight.Bold)
+                    Text(if (uiState.isEditing) "수정 완료" else "직접 편집", fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = { onIntent(ActionReviewIntent.ConfirmExecution) },
