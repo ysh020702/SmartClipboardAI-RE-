@@ -31,7 +31,9 @@ class GeminiClusterer(
         val remaining = items.drop(MAX_ITEMS)
 
         return try {
+            Log.w("aaa",buildPrompt(limited))
             val raw = geminiManager.run(buildPrompt(limited))
+            Log.w("aaa",raw)
 
             // 파싱 결과가 null이거나, assignments 크기가 맞지 않으면 null 반환 (폴백 유도)
             val result = parse(raw)?.takeIf { it.assignments.size == limited.size }
@@ -88,11 +90,12 @@ class GeminiClusterer(
     
             ## 출력 JSON schema
             {
-              "assignments": [1, 2, 1, 3],
+              "assignments": [1, 2, 1, 3, ...],
               "clusters": {
                 "1": "클러스터 라벨 1",
                 "2": "클러스터 라벨 2",
-                "3": "클러스터 라벨 3"
+                "3": "클러스터 라벨 3",
+                ...
               }
             }
     
@@ -111,10 +114,7 @@ class GeminiClusterer(
               {
                 "id": ${item.id},
                 "type": "${item.type.name}",
-                "title": ${item.title?.let { "\"${escapeJson(it)}\"" }},
-                "purpose": ${item.purpose?.let { "\"${escapeJson(it)}\"" }},
-                "keywords": ${item.purposeKeyword?.let { "\"${escapeJson(it)}\"" }},
-                "contentPreview": "${escapeJson(contentPreview(item, 150))}"
+                "purpose": ${item.purpose?.let { "\"${escapeJson(it)}\"" }}
               }
             """.trimIndent()
         }
