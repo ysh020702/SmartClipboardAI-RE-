@@ -2,6 +2,7 @@ package com.samsung.smartclipboard.domain.repository
 
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.TopicAction
+import com.samsung.smartclipboard.domain.model.TopicActionStatus
 import com.samsung.smartclipboard.domain.model.Topic
 import com.samsung.smartclipboard.domain.model.TopicAnalysis
 import kotlinx.coroutines.flow.Flow
@@ -63,4 +64,7 @@ interface DataRepository {
 
     /** 지정된 ID 목록에 해당하는 DataItem들을 반환한다 */
     suspend fun getItemsByIds(ids: List<Long>): List<DataItem>
+
+    /** TopicAction의 상태를 지정된 status로 업데이트한다 */
+    suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus)
 }
