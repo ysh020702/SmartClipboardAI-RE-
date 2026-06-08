@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
+import com.samsung.smartclipboard.presentation.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.IconButtonPlain
 import com.samsung.smartclipboard.presentation.Pill
@@ -102,9 +103,13 @@ fun TopicDataSelectionScreen(
     }
 
     if (uiState.isCreatingTask) {
-        TopicDataCreatingScreen(
-            topicTitle = topicTitle,
-            selectedCount = selectedIds.size,
+        AnalyzingScreen(
+            navigate = navigate,
+            data = mapOf(
+                "selectedCount" to selectedIds.size.toString(),
+                "topicName" to topicTitle,
+            ),
+            autoNavigate = false,
         )
         return
     }
@@ -533,80 +538,6 @@ private fun SelectionCreateTaskButton(
             fontSize = 15.sp,
             fontWeight = FontWeight.ExtraBold,
         )
-    }
-}
-
-@Composable
-private fun TopicDataCreatingScreen(
-    topicTitle: String,
-    selectedCount: Int,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF7F8FC)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(120.dp))
-
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(AppColors.BlueSoft),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                tint = AppColors.Blue,
-                modifier = Modifier.size(36.dp),
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        Text(
-            text = topicTitle,
-            color = AppColors.Slate800,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.ExtraBold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = "${selectedCount}개 데이터로 실행 초안을 생성하고 있어요",
-            color = AppColors.Slate500,
-            fontSize = 13.sp,
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        listOf("데이터 불러오는 중", "AI 분석 진행 중", "실행 초안 준비 중").forEachIndexed { index, label ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 40.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = if (index == 0) Icons.Default.Check else Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = if (index == 0) Color(0xFF34D399) else AppColors.Blue,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = label,
-                    color = Color(0xFF475569),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
     }
 }
 
