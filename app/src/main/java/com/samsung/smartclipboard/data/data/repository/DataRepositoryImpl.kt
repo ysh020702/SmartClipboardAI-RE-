@@ -300,6 +300,22 @@ class DataRepositoryImpl @Inject constructor(
         return dataItemDao.getItemsByIds(ids).map { it.toDomain() }
     }
 
+    override fun observeAllTopicActions(): Flow<List<TopicAction>> {
+        return topicDao.observeAllActions().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override fun observeAllTopicAnalysis(): Flow<List<TopicAnalysis>> {
+        return topicDao.observeAllAnalysis().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun getActionById(actionId: Long): TopicAction? {
+        return topicDao.getActionById(actionId)?.toDomain()
+    }
+
     /**
      * 단일 아이템에 대해 purpose 분석을 수행하고 DB를 업데이트한다.
      * 실패해도 아이템 저장 자체에는 영향이 없도록 예외를 삼킨다.
