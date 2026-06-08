@@ -52,7 +52,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.delay
 
 @Composable
 fun ActionReviewScreen(
@@ -74,11 +73,6 @@ fun ActionReviewScreen(
     )
 
     if (uiState.isExecuted) {
-        LaunchedEffect(Unit) {
-            delay(1000)
-            navigate(Screen.TopicDetail, backData)
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,7 +91,16 @@ fun ActionReviewScreen(
             }
             Spacer(Modifier.height(18.dp))
             Text("실행 완료", color = AppColors.Slate800, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-            Text("상세 화면으로 돌아가는 중입니다.", color = AppColors.Slate400, fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("외부 앱으로 전송이 완료되었습니다.", color = AppColors.Slate400, fontSize = 12.sp)
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = { navigate(Screen.TopicDetail, backData) },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Blue, contentColor = Color.White),
+            ) {
+                Text("토픽 상세로 돌아가기", fontWeight = FontWeight.Bold)
+            }
         }
         return
     }

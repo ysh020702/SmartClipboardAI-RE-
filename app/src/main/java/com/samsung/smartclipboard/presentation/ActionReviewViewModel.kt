@@ -132,6 +132,7 @@ class ActionReviewViewModel @Inject constructor(
                     val newVersion = DraftVersion(newVersionNum, state.currentVersion, state.title, state.body, "직접 편집됨")
 
                     updateCurrentDraft(state.title, state.body)
+                    saveDraftToDb(state.title, state.body)
 
                     state.copy(
                         isEditing = false,
@@ -161,46 +162,52 @@ class ActionReviewViewModel @Inject constructor(
             )
         }
 
-        val topicId = topicIdStr.toLongOrNull()
         val actionId = data["actionId"]?.toLongOrNull()
 
-        if (topicId != null && actionId != null) {
-            fetchActionData(topicId, actionId)
+        if (actionId != null) {
+            fetchActionById(actionId)
+        } else {
+            setFailed("init", "actionId가 필요합니다.")
         }
     }
 
-    private fun fetchActionData(topicId: Long, actionId: Long) {
+    /**
+     * DB에서 actionId로 직접 조회하여 화면을 복원한다.
+     * 외부 앱 실행 후 돌아와도 동일한 화면 상태를 유지하기 위해 사용한다.
+     */
+    private fun fetchActionById(actionId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val topicActions = dataRepository.observeTopicActions(topicId).first()
-                val matchedAction = topicActions.find { it.id == actionId }
+                val action = dataRepository.getActionById(actionId)
 
-                if (matchedAction != null) {
-                    currentActionId = matchedAction.id
+                if (action != null) {
+                    currentActionId = action.id
                     currentActionDraft = AgentActionDraft(
-                        type = matchedAction.type,
+                        type = action.type,
                         confidence = 1.0f,
-                        reason = "User initiated review from saved action",
-                        title = matchedAction.title,
-                        body = matchedAction.body,
-                        payload = matchedAction.editablePayload,
+                        reason = "Loaded from DB",
+                        title = action.title,
+                        body = action.body,
+                        payload = action.editablePayload,
                         sourceItemIds = emptyList()
                     )
 
-                    val topicItems = dataRepository.observeTopicItems(topicId).first()
+                    val topicItems = dataRepository.observeTopicItems(action.topicId).first()
                     currentSourceItems = topicItems.map { CandidateItem(it, 1.0f, "토픽 내 항목") }
 
-                    val initialVersion = DraftVersion(1, 0, matchedAction.title, matchedAction.body, "원본 초안")
+                    val initialVersion = DraftVersion(1, 0, action.title, action.body, "원본 초안")
 
                     _uiState.update {
                         it.copy(
-                            title = matchedAction.title,
-                            body = matchedAction.body,
+                            topicId = action.topicId.toString(),
+                            title = action.title,
+                            body = action.body,
                             currentVersion = 1,
                             parentVersion = 0,
                             history = listOf(initialVersion),
-                            isLoading = false
+                            isLoading = false,
+                            isExecuted = action.status == TopicActionStatus.EXECUTED
                         )
                     }
                 } else {
@@ -218,6 +225,7 @@ class ActionReviewViewModel @Inject constructor(
 
         if (targetVersion != null) {
             updateCurrentDraft(targetVersion.title, targetVersion.body)
+            saveDraftToDb(targetVersion.title, targetVersion.body)
 
             _uiState.update {
                 it.copy(
@@ -302,6 +310,9 @@ class ActionReviewViewModel @Inject constructor(
                         errorMessage = null
                     )
                 }
+
+                // AI 보완 결과를 DB에 저장하여 외부 앱 실행 후에도 복원 가능하도록 함
+                saveDraftToDb(refinedDraft.title, refinedDraft.body)
             } catch (e: Exception) {
                 setFailed("refine", "AI 보완 중 오류가 발생했습니다: ${e.message}")
             }
@@ -319,6 +330,22 @@ class ActionReviewViewModel @Inject constructor(
             payload = original.payload,
             sourceItemIds = original.sourceItemIds
         )
+    }
+
+    /**
+     * 현재 초안 내용을 DB에 저장한다.
+     * 외부 앱 실행 후 돌아와도 동일한 화면을 복원할 수 있도록 한다.
+     */
+    private fun saveDraftToDb(title: String, body: String) {
+        val actionId = currentActionId ?: return
+        viewModelScope.launch {
+            try {
+                dataRepository.updateTopicActionDraft(actionId, title, body)
+            } catch (e: Exception) {
+                // DB 저장 실패는 UI에 치명적이지 않으므로 로그만 남긴다
+                android.util.Log.w("ActionReview", "초안 DB 저장 실패: ${e.message}")
+            }
+        }
     }
 
     private fun confirmExecution() {

@@ -20,12 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,72 +36,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private data class HistoryDraft(
-    val id: String,
-    val type: String,
-    val icon: ImageVector,
-    val color: Color,
-    val description: String,
-    val status: String,
-)
-
-private data class HistoryTopic(
-    val id: String,
-    val title: String,
-    val date: String,
-    val dataCount: Int,
-    val summary: String,
-    val drafts: List<HistoryDraft>,
-)
-
-private val historyTopics = listOf(
-    HistoryTopic(
-        id = "1",
-        title = "스크린샷 모음",
-        date = "5월 26일 11:34",
-        dataCount = 5,
-        summary = "회의 자료, 여행 계획, 레시피, 행사 메모가 함께 묶였어요.",
-        drafts = listOf(
-            HistoryDraft("note", "일일 노트", Icons.Default.Description, AppColors.Blue, "스크린샷 5개를 일일 노트로 정리했어요.", "실행됨"),
-            HistoryDraft("calendar", "캘린더", Icons.Default.CalendarMonth, Color(0xFF2563EB), "워크숍과 여행 일정을 추가했어요.", "실행됨"),
-            HistoryDraft("reminder", "리마인더", Icons.Default.Notifications, AppColors.BlueDeep, "쇼핑과 워크숍 알림을 준비했어요.", "제외됨"),
-            HistoryDraft("share", "공유", Icons.Default.Share, AppColors.Cyan, "메시지 요약을 준비했어요.", "초안"),
-        ),
-    ),
-    HistoryTopic(
-        id = "2",
-        title = "제주 여행 계획",
-        date = "5월 22일 09:18",
-        dataCount = 3,
-        summary = "여행 일정, 숙소 정보, 저장한 장소를 정리했어요.",
-        drafts = listOf(
-            HistoryDraft("note", "일일 노트", Icons.Default.Description, AppColors.Blue, "여행 요약을 만들었어요.", "실행됨"),
-            HistoryDraft("calendar", "캘린더", Icons.Default.CalendarMonth, Color(0xFF2563EB), "여행 날짜를 등록했어요.", "실행됨"),
-            HistoryDraft("share", "공유", Icons.Default.Share, AppColors.Cyan, "여행 메시지 초안을 만들었어요.", "수정됨"),
-        ),
-    ),
-    HistoryTopic(
-        id = "3",
-        title = "주간 회의 메모",
-        date = "5월 19일 14:55",
-        dataCount = 4,
-        summary = "회의 메모, 다음 할 일, 예정 일정을 정리했어요.",
-        drafts = listOf(
-            HistoryDraft("note", "일일 노트", Icons.Default.Description, AppColors.Blue, "회의 핵심 내용을 요약했어요.", "실행됨"),
-            HistoryDraft("reminder", "리마인더", Icons.Default.Notifications, AppColors.BlueDeep, "후속 알림을 만들었어요.", "실행됨"),
-        ),
-    ),
-)
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-fun HistoryScreen(navigate: (Screen, Map<String, String>) -> Unit) {
-    var expandedId by remember { mutableStateOf<String?>(null) }
+fun HistoryScreen(
+    navigate: (Screen, Map<String, String>) -> Unit,
+    viewModel: HistoryViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var expandedId by remember { mutableStateOf<Long?>(null) }
 
     LazyColumn(
         modifier = Modifier
@@ -132,18 +76,62 @@ fun HistoryScreen(navigate: (Screen, Map<String, String>) -> Unit) {
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text("히스토리", color = AppColors.Slate800, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("이전 AI 정리 작업 ${historyTopics.size}개", color = AppColors.Slate400, fontSize = 10.sp)
+                    Text("이전 AI 정리 작업 ${uiState.topics.size}개", color = AppColors.Slate400, fontSize = 10.sp)
                 }
             }
         }
-        items(historyTopics) { topic ->
+
+        when {
+            uiState.isLoading -> item {
+                Text(
+                    "불러오는 중...",
+                    color = AppColors.Slate400,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            uiState.errorMessage != null -> item {
+                Text(
+                    uiState.errorMessage.orEmpty(),
+                    color = AppColors.Slate400,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            uiState.topics.isEmpty() -> item {
+                Text(
+                    "아직 히스토리가 없습니다. 데이터를 분석하면 여기에 기록됩니다.",
+                    color = AppColors.Slate400,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        }
+
+        items(uiState.topics, key = { it.id }) { topic ->
             val open = expandedId == topic.id
             HistoryTopicCard(
                 topic = topic,
                 open = open,
                 onToggle = { expandedId = if (open) null else topic.id },
-                onDetail = { navigate(Screen.TopicDetail, mapOf("topicId" to topic.id, "topicTitle" to topic.title, "from" to "history")) },
-                onDraft = { actionType -> navigate(Screen.ActionReview, mapOf("actionType" to actionType, "topicId" to topic.id, "topicTitle" to topic.title, "from" to "history")) },
+                onDetail = {
+                    navigate(
+                        Screen.TopicDetail,
+                        mapOf("topicId" to topic.id.toString(), "topicTitle" to topic.title, "from" to "history")
+                    )
+                },
+                onDraft = { draft ->
+                    navigate(
+                        Screen.ActionReview,
+                        mapOf(
+                            "actionType" to draft.routeActionType,
+                            "actionId" to draft.actionId.toString(),
+                            "topicId" to draft.topicId.toString(),
+                            "topicTitle" to topic.title,
+                            "from" to "history",
+                        ),
+                    )
+                },
             )
         }
     }
@@ -151,11 +139,11 @@ fun HistoryScreen(navigate: (Screen, Map<String, String>) -> Unit) {
 
 @Composable
 private fun HistoryTopicCard(
-    topic: HistoryTopic,
+    topic: HistoryTopicUi,
     open: Boolean,
     onToggle: () -> Unit,
     onDetail: () -> Unit,
-    onDraft: (String) -> Unit,
+    onDraft: (HistoryDraftUi) -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -190,24 +178,25 @@ private fun HistoryTopicCard(
             }
 
             if (open) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 14.dp)
-                        .background(Color(0xFFF0F5FF), RoundedCornerShape(14.dp))
-                        .padding(12.dp),
-                ) {
-                    Icon(Icons.Default.AutoAwesome, null, tint = AppColors.Blue, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(topic.summary, color = AppColors.BlueDeep, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                if (topic.summary.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 14.dp)
+                            .background(Color(0xFFF0F5FF), RoundedCornerShape(14.dp))
+                            .padding(12.dp),
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, null, tint = AppColors.Blue, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(topic.summary, color = AppColors.BlueDeep, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                    }
                 }
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     topic.drafts.forEach { draft ->
-                        val clickable = draft.status == "초안" || draft.status == "수정됨"
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(Color(0xFFFAFBFF), RoundedCornerShape(14.dp))
-                                .clickable(enabled = clickable) { onDraft(draft.id) }
+                                .clickable { onDraft(draft) }
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -223,7 +212,7 @@ private fun HistoryTopicCard(
                                 }
                                 Text(draft.description, color = AppColors.Slate400, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
-                            if (clickable) Icon(Icons.Default.KeyboardArrowRight, null, tint = AppColors.Slate200, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.KeyboardArrowRight, null, tint = AppColors.Slate200, modifier = Modifier.size(14.dp))
                         }
                     }
                     Button(
