@@ -1,5 +1,7 @@
 package com.samsung.smartclipboard.presentation.main
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,17 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,7 +39,6 @@ import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.GradientButton
 import com.samsung.smartclipboard.presentation.main.history.HistoryScreen
 import com.samsung.smartclipboard.presentation.main.home.HomeScreen
-import com.samsung.smartclipboard.presentation.NavTab
 import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
@@ -60,7 +55,6 @@ fun MainScreen(
     MainScreenContent(
         uiState = uiState,
         onNavigate = viewModel::navigate,
-        onBottomTabSelected = viewModel::onBottomTabSelected,
         onDataSelectModeChanged = viewModel::onDataSelectModeChanged,
         onOpenAnalysisSheet = viewModel::openAnalysisSheet,
         onDismissAnalysisSheet = viewModel::dismissAnalysisSheet,
@@ -74,7 +68,6 @@ fun MainScreen(
 private fun MainScreenContent(
     uiState: MainUiState,
     onNavigate: (Screen, Map<String, String>) -> Unit,
-    onBottomTabSelected: (NavTab) -> Unit,
     onDataSelectModeChanged: (Boolean) -> Unit,
     onOpenAnalysisSheet: (Int, String) -> Unit,
     onDismissAnalysisSheet: () -> Unit,
@@ -84,12 +77,6 @@ private fun MainScreenContent(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
-        bottomBar = {
-            BottomNavigation(
-                activeTab = uiState.activeTab,
-                onSelect = onBottomTabSelected,
-            )
-        },
         containerColor = AppColors.Surface,
     ) { padding ->
         Box(
@@ -98,53 +85,66 @@ private fun MainScreenContent(
                 .padding(padding)
                 .background(AppColors.Surface),
         ) {
-            when (uiState.screen) {
-                Screen.Home -> HomeScreen(
-                    navigate = onNavigate,
-                )
+            Crossfade(
+                targetState = ScreenRenderState(
+                    screen = uiState.screen,
+                    navData = uiState.navData,
+                ),
+                animationSpec = tween(durationMillis = 280),
+                label = "main_screen_crossfade",
+            ) { target ->
+                when (target.screen) {
+                    Screen.Home -> HomeScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.Data -> DataScreen(
-                    navigate = onNavigate,
-                    onSelectModeChange = onDataSelectModeChanged,
-                    onOpenSheet = onOpenAnalysisSheet,
-                )
+                    Screen.Data -> DataScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                        onSelectModeChange = onDataSelectModeChanged,
+                        onOpenSheet = onOpenAnalysisSheet,
+                    )
 
-                Screen.Tasks -> TasksScreen(
-                    navigate = onNavigate,
-                )
+                    Screen.Tasks -> TasksScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.History -> HistoryScreen(
-                    navigate = onNavigate,
-                )
+                    Screen.History -> HistoryScreen(
+                        navigate = onNavigate,
+                    )
 
-                Screen.Storage -> StorageScreen(
-                    navigate = onNavigate,
-                )
+                    Screen.Storage -> StorageScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.AiSuggest -> TopicAiSuggestScreen(
-                    navigate = onNavigate,
-                    data = uiState.navData,
-                )
+                    Screen.AiSuggest -> TopicAiSuggestScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.Analyzing -> AnalyzingScreen(
-                    navigate = onNavigate,
-                    data = uiState.navData,
-                )
+                    Screen.Analyzing -> AnalyzingScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.TopicDetail -> TopicSelectionScreen(
-                    navigate = onNavigate,
-                    data = uiState.navData,
-                )
+                    Screen.TopicDetail -> TopicSelectionScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.ActionReview -> ActionReviewScreen(
-                    navigate = onNavigate,
-                    data = uiState.navData,
-                )
+                    Screen.ActionReview -> ActionReviewScreen(
+                        navigate = onNavigate,
+                        data = target.navData,
+                    )
 
-                Screen.TopicDataSelect -> TopicDataSelectionScreen(
-                    topicTitle = uiState.navData["topic"].orEmpty(),
-                    navigate = onNavigate,
-                )
+                    Screen.TopicDataSelect -> TopicDataSelectionScreen(
+                        topicTitle = target.navData["topic"].orEmpty(),
+                        navigate = onNavigate,
+                    )
+                }
             }
         }
     }
@@ -210,38 +210,27 @@ private fun MainScreenContent(
     }
 }
 
-@Composable
-fun BottomNavigation(
-    activeTab: NavTab,
-    onSelect: (NavTab) -> Unit,
-) {
-    NavigationBar(
-        containerColor = Color.White.copy(alpha = 0.98f),
-        tonalElevation = 8.dp,
-    ) {
-        val items = listOf(
-            NavTab.Home to ("홈" to Icons.Default.Home),
-            NavTab.Data to ("데이터" to Icons.Default.Storage),
-            NavTab.Tasks to ("작업" to Icons.Default.Work),
-        )
+private data class ScreenRenderState(
+    val screen: Screen,
+    val navData: Map<String, String>,
+)
 
-        items.forEach { (tab, pair) ->
-            NavigationBarItem(
-                selected = activeTab == tab,
-                onClick = { onSelect(tab) },
-                icon = {
-                    Icon(
-                        imageVector = pair.second,
-                        contentDescription = pair.first,
-                    )
-                },
-                label = {
-                    Text(
-                        text = pair.first,
-                        fontSize = 11.sp,
-                    )
-                },
-            )
-        }
-    }
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun MainScreenHomePreview() {
+    MainScreenContent(
+        uiState = MainUiState(
+            screen = Screen.Analyzing,
+            navData = mapOf(
+                "selectedCount" to "3",
+                "topicName" to "회의 자료 정리",
+            ),
+        ),
+        onNavigate = { _, _ -> },
+        onDataSelectModeChanged = {},
+        onOpenAnalysisSheet = { _, _ -> },
+        onDismissAnalysisSheet = {},
+        onSheetTopicNameChanged = {},
+        onConfirmAnalysis = {},
+    )
 }

@@ -1,5 +1,6 @@
 package com.samsung.smartclipboard.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
@@ -37,16 +39,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun TasksScreen(navigate: (Screen, Map<String, String>) -> Unit) {
+fun TasksScreen(
+    navigate: (Screen, Map<String, String>) -> Unit,
+    data: Map<String, String> = emptyMap(),
+) {
     val topics = listOf(Topic("1", "수집한 항목 (5)", 5, "5월 26일 11:34 업데이트", AppColors.Blue, listOf("스크린샷", "회의", "여행")))
     val steps = listOf("수집" to true, "클러스터" to true, "주제" to true, "AI 분석" to false, "초안" to false, "확인" to false, "실행" to false)
+
+    fun navigateBack() {
+        if (data["from"] == "homePanel") {
+            navigate(Screen.Home, mapOf("openPanel" to "instant"))
+        } else {
+            navigate(Screen.Home, emptyMap())
+        }
+    }
+
+    BackHandler {
+        navigateBack()
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
         item {
-            SimpleTopHeader("작업", "주제별로 수집한 데이터를 정리하세요")
+            TasksTopHeader(
+                onBack = { navigateBack() },
+            )
         }
         item {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -92,6 +111,45 @@ fun TasksScreen(navigate: (Screen, Map<String, String>) -> Unit) {
                     Text("현재 단계: 주제 생성 완료 · 다음: AI 분석 및 초안 생성", color = AppColors.Slate400, fontSize = 9.sp)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TasksTopHeader(onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Button(
+            onClick = onBack,
+            modifier = Modifier.size(36.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFF1F5F9),
+                contentColor = AppColors.Slate500,
+            ),
+            contentPadding = PaddingValues(0.dp),
+            border = BorderStroke(1.dp, AppColors.Border),
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, modifier = Modifier.size(16.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "작업",
+                color = AppColors.Slate800,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "주제별로 수집한 데이터를 정리하세요",
+                color = AppColors.Slate400,
+                fontSize = 10.sp,
+            )
         }
     }
 }

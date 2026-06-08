@@ -1,5 +1,6 @@
 package com.samsung.smartclipboard.presentation.main.taskselection
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,8 +62,13 @@ fun TopicSelectionScreen(
         when (from) {
             "aiSuggest" -> navigate(Screen.AiSuggest, mapOf("skipLoading" to "true", "query" to query))
             "history" -> navigate(Screen.History, emptyMap())
+            "homePanel" -> navigate(Screen.Home, mapOf("openPanel" to "instant"))
             else -> navigate(Screen.Home, emptyMap())
         }
+    }
+
+    BackHandler(enabled = true) {
+        goBack()
     }
 
     LazyColumn(

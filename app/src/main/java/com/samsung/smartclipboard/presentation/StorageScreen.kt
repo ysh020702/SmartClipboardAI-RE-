@@ -1,5 +1,6 @@
 package com.samsung.smartclipboard.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,13 +45,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun StorageScreen(navigate: (Screen, Map<String, String>) -> Unit) {
+fun StorageScreen(
+    navigate: (Screen, Map<String, String>) -> Unit,
+    data: Map<String, String> = emptyMap(),
+) {
     val periods = listOf("앱 종료 전까지", "1시간", "24시간", "7일", "직접 설정")
     val storageOptions = listOf(250 to "250 MB", 500 to "500 MB", 1024 to "1 GB")
     var selectedPeriod by remember { mutableStateOf(periods.first()) }
     var storageLimit by remember { mutableStateOf(500) }
     val usedStorage = 486.9f
     val percent = (usedStorage / storageLimit).coerceAtMost(1f)
+
+    fun navigateBack() {
+        if (data["from"] == "homePanel") {
+            navigate(Screen.Home, mapOf("openPanel" to "instant"))
+        } else {
+            navigate(Screen.Home, emptyMap())
+        }
+    }
+
+    BackHandler {
+        navigateBack()
+    }
 
     Column(
         modifier = Modifier
@@ -60,7 +76,7 @@ fun StorageScreen(navigate: (Screen, Map<String, String>) -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Button(
-                onClick = { navigate(Screen.Home, emptyMap()) },
+                onClick = { navigateBack() },
                 modifier = Modifier.size(36.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.Slate800),
