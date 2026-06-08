@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,7 +51,6 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var expandedId by remember { mutableStateOf<Long?>(null) }
 
     LazyColumn(
         modifier = Modifier
@@ -109,27 +110,12 @@ fun HistoryScreen(
         }
 
         items(uiState.topics, key = { it.id }) { topic ->
-            val open = expandedId == topic.id
             HistoryTopicCard(
                 topic = topic,
-                open = open,
-                onToggle = { expandedId = if (open) null else topic.id },
                 onDetail = {
                     navigate(
                         Screen.TopicDetail,
                         mapOf("topicId" to topic.id.toString(), "topicTitle" to topic.title, "from" to "history")
-                    )
-                },
-                onDraft = { draft ->
-                    navigate(
-                        Screen.ActionReview,
-                        mapOf(
-                            "actionType" to draft.routeActionType,
-                            "actionId" to draft.actionId.toString(),
-                            "topicId" to draft.topicId.toString(),
-                            "topicTitle" to topic.title,
-                            "from" to "history",
-                        ),
                     )
                 },
             )
@@ -140,15 +126,13 @@ fun HistoryScreen(
 @Composable
 private fun HistoryTopicCard(
     topic: HistoryTopicUi,
-    open: Boolean,
-    onToggle: () -> Unit,
     onDetail: () -> Unit,
-    onDraft: (HistoryDraftUi) -> Unit,
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clickable(onClick = onDetail),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, AppColors.Border),
         shape = RoundedCornerShape(18.dp),
@@ -158,7 +142,6 @@ private fun HistoryTopicCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onToggle)
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -177,66 +160,50 @@ private fun HistoryTopicCard(
                 Icon(Icons.Default.KeyboardArrowRight, null, tint = AppColors.Slate200, modifier = Modifier.size(16.dp))
             }
 
-            if (open) {
-                if (topic.summary.isNotBlank()) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 14.dp)
-                            .background(Color(0xFFF0F5FF), RoundedCornerShape(14.dp))
-                            .padding(12.dp),
-                    ) {
-                        Icon(Icons.Default.AutoAwesome, null, tint = AppColors.Blue, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(topic.summary, color = AppColors.BlueDeep, fontSize = 11.sp, modifier = Modifier.weight(1f))
-                    }
+            if (topic.summary.isNotBlank()) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 14.dp)
+                        .padding(bottom = 14.dp)
+                        .background(Color(0xFFF0F5FF), RoundedCornerShape(14.dp))
+                        .padding(12.dp),
+                ) {
+                    Icon(Icons.Default.AutoAwesome, null, tint = AppColors.Blue, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(topic.summary, color = AppColors.BlueDeep, fontSize = 11.sp, modifier = Modifier.weight(1f))
                 }
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    topic.drafts.forEach { draft ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFFAFBFF), RoundedCornerShape(14.dp))
-                                .clickable { onDraft(draft) }
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(Modifier.size(34.dp).background(draft.color.copy(alpha = 0.10f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                Icon(draft.icon, null, tint = draft.color, modifier = Modifier.size(15.dp))
-                            }
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(draft.type, color = AppColors.Slate800, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                    Spacer(Modifier.width(6.dp))
-                                    StatusPill(draft.status)
-                                }
-                                Text(draft.description, color = AppColors.Slate400, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                            Icon(Icons.Default.KeyboardArrowRight, null, tint = AppColors.Slate200, modifier = Modifier.size(14.dp))
-                        }
-                    }
-                    Button(
-                        onClick = onDetail,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.BlueSoft, contentColor = AppColors.Blue),
-                        border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
-                    ) {
-                        Text("전체 상세 보기", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+            }
+
+            // 상태 요약 바
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .padding(bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                val draftCount = topic.drafts.count { it.status == "초안" }
+                val editedCount = topic.drafts.count { it.status == "수정됨" }
+                val executedCount = topic.drafts.count { it.status == "실행됨" }
+                val dismissedCount = topic.drafts.count { it.status == "제외됨" }
+
+                if (draftCount > 0) StatusPill("초안 $draftCount", StatusColorType.DRAFT)
+                if (editedCount > 0) StatusPill("수정됨 $editedCount", StatusColorType.EDITED)
+                if (executedCount > 0) StatusPill("실행됨 $executedCount", StatusColorType.EXECUTED)
+                if (dismissedCount > 0) StatusPill("제외됨 $dismissedCount", StatusColorType.DISMISSED)
             }
         }
     }
 }
 
+enum class StatusColorType(val bg: Color, val text: Color) {
+    DRAFT(Color(0xFFDBEAFE), AppColors.Blue),           // 초안 = 파란색
+    EDITED(Color(0xFFFEF3C7), Color(0xFFD97706)),         // 수정됨 = 노란색
+    EXECUTED(Color(0xFFD1FAE5), AppColors.Green),         // 실행됨 = 초록색
+    DISMISSED(Color(0xFFF1F5F9), AppColors.Slate400),    // 제외됨 = 회색
+}
+
 @Composable
-private fun StatusPill(status: String) {
-    val pair = when (status) {
-        "실행됨" -> Color(0xFFD1FAE5) to AppColors.Green
-        "수정됨" -> Color(0xFFFEF3C7) to Color(0xFFD97706)
-        "제외됨" -> Color(0xFFF1F5F9) to AppColors.Slate400
-        else -> AppColors.BlueSoft to AppColors.Blue
-    }
-    Pill(status, pair.first, pair.second)
+private fun StatusPill(text: String, type: StatusColorType) {
+    Pill(text, type.bg, type.text)
 }
