@@ -74,6 +74,7 @@ import java.util.Locale
 @Composable
 fun DataScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
+    data: Map<String, String> = emptyMap(),
     dataViewModel: DataViewModel = hiltViewModel(),
     onSelectModeChange: (Boolean) -> Unit,
     onOpenSheet: (Int, String) -> Unit,
@@ -81,10 +82,18 @@ fun DataScreen(
     val uiState by dataViewModel.uiState.collectAsStateWithLifecycle()
     var previewItem by remember { mutableStateOf<DataItem?>(null) }
 
+    fun navigateBack() {
+        if (data["from"] == "homePanel") {
+            navigate(Screen.Home, mapOf("openPanel" to "instant"))
+        } else {
+            navigate(Screen.Home, emptyMap())
+        }
+    }
+
     BackHandler(enabled = true) {
         when {
             uiState.selectMode -> dataViewModel.exitSelectMode()
-            else -> navigate(Screen.Home, emptyMap())
+            else -> navigateBack()
         }
     }
 
@@ -122,7 +131,7 @@ fun DataScreen(
             } else {
                 DataNormalHeader(
                     itemCount = visibleItems.size,
-                    onBack = { navigate(Screen.Home, emptyMap()) },
+                    onBack = { navigateBack() },
                 )
             }
 
