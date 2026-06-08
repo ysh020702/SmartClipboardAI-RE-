@@ -265,6 +265,14 @@ class DataRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus) {
+        topicDao.updateActionStatus(
+            actionId = actionId,
+            status = status.name,
+            updatedAt = System.currentTimeMillis()
+        )
+    }
+
     override suspend fun fillPurposes() {
         val entities = dataItemDao.getItemsWithoutPurpose()
         if (entities.isEmpty()) return
