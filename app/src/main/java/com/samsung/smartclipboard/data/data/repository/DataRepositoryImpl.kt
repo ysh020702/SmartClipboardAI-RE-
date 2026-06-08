@@ -174,7 +174,7 @@ class DataRepositoryImpl @Inject constructor(
         val normalizedTitle = title.trim()
         require(normalizedTitle.isNotBlank()) { "Topic title must not be blank" }
         val now = System.currentTimeMillis()
-        val topicId = topicDao.findTopicIdByTitle(normalizedTitle)
+        val topicId = topicDao.findTopicIdByTitleAndCreatedAt(normalizedTitle, now)
             ?: topicDao.insertTopic(
                 TopicEntity(
                     title = normalizedTitle,
