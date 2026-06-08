@@ -111,4 +111,13 @@ interface TopicDao {
         status: String,
         updatedAt: Long
     )
+
+    @Query("SELECT * FROM topic_actions ORDER BY topicId, updatedAt DESC")
+    fun observeAllActions(): Flow<List<TopicActionEntity>>
+
+    @Query("SELECT * FROM topic_analysis_results ORDER BY topicId, createdAt DESC")
+    fun observeAllAnalysis(): Flow<List<TopicAnalysisEntity>>
+
+    @Query("SELECT * FROM topic_actions WHERE id = :actionId LIMIT 1")
+    suspend fun getActionById(actionId: Long): TopicActionEntity?
 }
