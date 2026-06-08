@@ -55,6 +55,7 @@ import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.DarkGradient
 import com.samsung.smartclipboard.presentation.Pill
 import com.samsung.smartclipboard.presentation.Screen
+import com.samsung.smartclipboard.presentation.main.home.HomePortalTransition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
@@ -223,7 +224,7 @@ private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
     var stepIndex by remember { mutableStateOf(0) }
     var done by remember { mutableStateOf(false) }
 
-    val loadingSteps = listOf("수집 데이터 확인 중", "패턴 분류 중", "추천 주제 준비 중")
+    val loadingSteps = HomePortalTransition.LoadingSteps
 
     LaunchedEffect(Unit) {
         delay(850)
