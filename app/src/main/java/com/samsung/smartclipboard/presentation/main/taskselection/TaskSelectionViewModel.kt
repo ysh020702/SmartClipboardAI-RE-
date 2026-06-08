@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation.main.topicselection
+package com.samsung.smartclipboard.presentation.main.taskselection
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth

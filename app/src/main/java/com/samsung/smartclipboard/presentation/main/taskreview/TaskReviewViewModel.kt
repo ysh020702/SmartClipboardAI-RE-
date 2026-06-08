@@ -1,5 +1,6 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.taskreview
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
@@ -343,7 +344,7 @@ class ActionReviewViewModel @Inject constructor(
                 dataRepository.updateTopicActionDraft(actionId, title, body)
             } catch (e: Exception) {
                 // DB 저장 실패는 UI에 치명적이지 않으므로 로그만 남긴다
-                android.util.Log.w("ActionReview", "초안 DB 저장 실패: ${e.message}")
+                Log.w("ActionReview", "초안 DB 저장 실패: ${e.message}")
             }
         }
     }

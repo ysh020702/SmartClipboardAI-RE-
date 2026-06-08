@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation.main.topicselection
+package com.samsung.smartclipboard.presentation.main.taskselection
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

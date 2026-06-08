@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.taskreview
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,12 +28,12 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -52,6 +52,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.samsung.smartclipboard.presentation.AppColors
+import com.samsung.smartclipboard.presentation.BlueGradient
+import com.samsung.smartclipboard.presentation.FieldBlock
+import com.samsung.smartclipboard.presentation.ReadOnlyBox
+import com.samsung.smartclipboard.presentation.Screen
+import com.samsung.smartclipboard.presentation.actionConfigs
 
 @Composable
 fun ActionReviewScreen(
@@ -222,7 +228,14 @@ fun ActionReviewScreenContent(
                                 singleLine = true
                             )
                         } else {
-                            ReadOnlyBox { Text(uiState.title, color = AppColors.Slate800, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
+                            ReadOnlyBox {
+                                Text(
+                                    uiState.title,
+                                    color = AppColors.Slate800,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                     FieldBlock("본문") {
@@ -234,7 +247,14 @@ fun ActionReviewScreenContent(
                                 minLines = 7
                             )
                         } else {
-                            ReadOnlyBox { Text(uiState.body, color = AppColors.Slate800, fontSize = 12.sp, lineHeight = 18.sp) }
+                            ReadOnlyBox {
+                                Text(
+                                    uiState.body,
+                                    color = AppColors.Slate800,
+                                    fontSize = 12.sp,
+                                    lineHeight = 18.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -349,7 +369,7 @@ fun ActionReviewScreenContent(
                     ),
                 ) {
                     if (uiState.isExecuting) {
-                        androidx.compose.material3.CircularProgressIndicator(
+                        CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
                             color = Color.White,
                             strokeWidth = 2.dp

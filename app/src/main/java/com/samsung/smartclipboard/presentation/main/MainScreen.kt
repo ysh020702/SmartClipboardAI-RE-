@@ -36,20 +36,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.samsung.smartclipboard.presentation.ActionReviewScreen
-import com.samsung.smartclipboard.presentation.main.topicaisuggest.TopicAiSuggestScreen
+import com.samsung.smartclipboard.presentation.main.taskreview.ActionReviewScreen
+import com.samsung.smartclipboard.presentation.main.aitopicselection.TopicAiSuggestScreen
 import com.samsung.smartclipboard.presentation.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.GradientButton
-import com.samsung.smartclipboard.presentation.HistoryScreen
+import com.samsung.smartclipboard.presentation.main.history.HistoryScreen
 import com.samsung.smartclipboard.presentation.main.home.HomeScreen
 import com.samsung.smartclipboard.presentation.NavTab
 import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
-import com.samsung.smartclipboard.presentation.main.topicselection.TopicSelectionScreen
+import com.samsung.smartclipboard.presentation.main.taskselection.TopicSelectionScreen
 import com.samsung.smartclipboard.presentation.main.data.DataScreen
-import com.samsung.smartclipboard.presentation.main.data.TopicDataSelectionScreen
+import com.samsung.smartclipboard.presentation.main.manualdataselection.TopicDataSelectionScreen
 
 @Composable
 fun MainScreen(
