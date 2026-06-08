@@ -196,7 +196,7 @@ private fun TopicActionRow(action: TopicActionCardUi, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.width(6.dp))
-                    Pill(action.statusLabel, AppColors.BlueSoft, AppColors.Blue)
+                    Pill(action.statusLabel, action.statusColor.first, action.statusColor.second)
                 }
                 Text(
                     text = action.description,
