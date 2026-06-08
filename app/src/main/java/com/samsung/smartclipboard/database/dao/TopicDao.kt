@@ -37,8 +37,8 @@ interface TopicDao {
     )
     fun observeTopicSummaries(): Flow<List<TopicSummaryRow>>
 
-    @Query("SELECT id FROM topics WHERE title = :title COLLATE NOCASE LIMIT 1")
-    suspend fun findTopicIdByTitle(title: String): Long?
+    @Query("SELECT id FROM topics WHERE title = :title COLLATE NOCASE AND createdAt = :createdAt LIMIT 1")
+    suspend fun findTopicIdByTitleAndCreatedAt(title: String, createdAt: Long): Long?
 
     @Query(
         """
