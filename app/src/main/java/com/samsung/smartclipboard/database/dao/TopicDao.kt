@@ -120,4 +120,19 @@ interface TopicDao {
 
     @Query("SELECT * FROM topic_actions WHERE id = :actionId LIMIT 1")
     suspend fun getActionById(actionId: Long): TopicActionEntity?
+
+    @Query("DELETE FROM topic_actions WHERE topicId = :topicId")
+    suspend fun deleteActionsByTopicId(topicId: Long)
+
+    @Query("DELETE FROM topic_analysis_results WHERE topicId = :topicId")
+    suspend fun deleteAnalysisByTopicId(topicId: Long)
+
+    @Query("DELETE FROM topic_item_cross_refs WHERE topicId = :topicId")
+    suspend fun deleteCrossRefsByTopicId(topicId: Long)
+
+    @Query("DELETE FROM topics WHERE id = :topicId")
+    suspend fun deleteTopicById(topicId: Long)
+
+    @Query("DELETE FROM topic_actions WHERE id IN (:actionIds)")
+    suspend fun deleteActionsByIds(actionIds: List<Long>)
 }
