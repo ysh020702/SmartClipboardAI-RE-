@@ -7,6 +7,4 @@ data class DataUiState(
     val items: List<DataItem> = emptyList(),
     val selectMode: Boolean = false,
     val selected: Set<Long> = emptySet(),
-    val showDeleteConfirm: Boolean = false,
-    val deleteTargetId: Long? = null
 )
