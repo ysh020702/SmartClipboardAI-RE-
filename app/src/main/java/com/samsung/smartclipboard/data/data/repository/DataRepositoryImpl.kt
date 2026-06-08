@@ -316,6 +316,17 @@ class DataRepositoryImpl @Inject constructor(
         return topicDao.getActionById(actionId)?.toDomain()
     }
 
+    override suspend fun deleteTopicById(topicId: Long) {
+        topicDao.deleteActionsByTopicId(topicId)
+        topicDao.deleteAnalysisByTopicId(topicId)
+        topicDao.deleteCrossRefsByTopicId(topicId)
+        topicDao.deleteTopicById(topicId)
+    }
+
+    override suspend fun deleteTopicsByIds(topicIds: List<Long>) {
+        topicIds.forEach { id -> deleteTopicById(id) }
+    }
+
     /**
      * 단일 아이템에 대해 purpose 분석을 수행하고 DB를 업데이트한다.
      * 실패해도 아이템 저장 자체에는 영향이 없도록 예외를 삼킨다.
