@@ -67,4 +67,13 @@ interface DataRepository {
 
     /** TopicAction의 상태를 지정된 status로 업데이트한다 */
     suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus)
+
+    /** 모든 토픽의 액션을 Flow로 관찰하여 반환한다 (히스토리 화면용) */
+    fun observeAllTopicActions(): Flow<List<TopicAction>>
+
+    /** 모든 토픽의 분석 결과를 Flow로 관찰하여 반환한다 (히스토리 화면용) */
+    fun observeAllTopicAnalysis(): Flow<List<TopicAnalysis>>
+
+    /** 지정된 ID의 TopicAction을 반환한다 */
+    suspend fun getActionById(actionId: Long): TopicAction?
 }
