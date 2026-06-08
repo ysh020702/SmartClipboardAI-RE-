@@ -49,6 +49,7 @@ import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
 import com.samsung.smartclipboard.presentation.main.topicselection.TopicSelectionScreen
 import com.samsung.smartclipboard.presentation.main.data.DataScreen
+import com.samsung.smartclipboard.presentation.main.data.TopicDataSelectionScreen
 
 @Composable
 fun MainScreen(
@@ -138,6 +139,11 @@ private fun MainScreenContent(
                 Screen.ActionReview -> ActionReviewScreen(
                     navigate = onNavigate,
                     data = uiState.navData,
+                )
+
+                Screen.TopicDataSelect -> TopicDataSelectionScreen(
+                    topicTitle = uiState.navData["topic"].orEmpty(),
+                    navigate = onNavigate,
                 )
             }
         }
