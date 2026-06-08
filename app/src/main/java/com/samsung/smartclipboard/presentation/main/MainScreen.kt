@@ -44,6 +44,7 @@ import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
 import com.samsung.smartclipboard.presentation.main.taskselection.TopicSelectionScreen
 import com.samsung.smartclipboard.presentation.main.data.DataScreen
+import com.samsung.smartclipboard.presentation.main.home.HomePortalTransition
 import com.samsung.smartclipboard.presentation.main.manualdataselection.TopicDataSelectionScreen
 
 @Composable
@@ -90,7 +91,7 @@ private fun MainScreenContent(
                     screen = uiState.screen,
                     navData = uiState.navData,
                 ),
-                animationSpec = tween(durationMillis = 280),
+                animationSpec = tween(durationMillis = HomePortalTransition.MainScreenCrossfadeMillis),
                 label = "main_screen_crossfade",
             ) { target ->
                 when (target.screen) {

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,6 +66,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +75,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -149,16 +153,11 @@ private fun HomeScreenContent(
     navigate: (Screen, Map<String, String>) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
+    var portalAnimating by remember { mutableStateOf(false) }
+    var portalCardTopLeft by remember { mutableStateOf(Offset.Zero) }
+    var portalCardSize by remember { mutableStateOf(IntSize.Zero) }
     val trimmedQuery = query.trim()
-    val hasQuery = trimmedQuery.isNotEmpty()
     val scrollState = rememberScrollState()
-    val homeCardGradient = Brush.linearGradient(
-        listOf(
-            Color(0xFF2754D8),
-            Color(0xFF2C66F0),
-            Color(0xFF4387FF),
-        )
-    )
     val density = LocalDensity.current
 
     BoxWithConstraints(
@@ -167,6 +166,8 @@ private fun HomeScreenContent(
             .background(Color.White),
     ) {
         val panelWidthPx = with(density) { maxWidth.toPx() }
+        val screenWidthPx = with(density) { maxWidth.toPx() }
+        val screenHeightPx = with(density) { maxHeight.toPx() }
 
         Box(
             modifier = Modifier
@@ -208,179 +209,36 @@ private fun HomeScreenContent(
                     )
                 },
         ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp)
-                .padding(top = 36.dp),
-        ) {
-            Box(Modifier.fillMaxWidth()) {
-                SettingsMenuButton(
-                    modifier = Modifier.align(Alignment.TopStart),
-                    onClick = {
-                        onSettingsPanelOpenInstantlyChange(false)
-                        onPanelDragOffsetChange(null)
-                        onSettingsPanelMountedChange(true)
-                        onSettingsPanelVisibleChange(true)
-                    },
-                )
-            }
-
-            Spacer(Modifier.height(42.dp))
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = AppColors.Blue,
-                    modifier = Modifier.size(54.dp)
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                Text(
-                    text = "SmartClipboardAI",
-                    color = AppColors.Slate800,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-
-                Text(
-                    text = "수집한 정보를 AI가 정리해드려요",
-                    color = AppColors.Slate400,
-                    fontSize = 12.sp
-                )
-            }
-
-            Spacer(Modifier.height(38.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(homeCardGradient, RoundedCornerShape(22.dp))
-                    .padding(20.dp),
-            ) {
-                Text(
-                    text = "무엇을 정리할까요?",
-                    color = Color.White,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-
-                Text(
-                    text = "주제가 있다면 직접 입력하고, 없다면 AI에게 추천받아보세요.",
-                    color = Color(0xFFD7E1FF),
-                    fontSize = 11.sp
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    placeholder = {
-                        Text(
-                            text = "회의 메모 정리, 여행 계획, 일정 캡처 분석",
-                            color = Color.White.copy(alpha = 0.50f),
-                            fontSize = 12.sp
-                        )
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White.copy(alpha = 0.16f),
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.16f),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+        HomeContentColumn(
+            scrollState = scrollState,
+            query = query,
+            isPortalAnimating = portalAnimating,
+            onQueryChange = { query = it },
+            onSettingsClick = {
+                onSettingsPanelOpenInstantlyChange(false)
+                onPanelDragOffsetChange(null)
+                onSettingsPanelMountedChange(true)
+                onSettingsPanelVisibleChange(true)
+            },
+            onPromptCardPositioned = { topLeft, size ->
+                portalCardTopLeft = topLeft
+                portalCardSize = size
+            },
+            onManualTopicClick = {
+                navigate(
+                    Screen.TopicDataSelect,
+                    mapOf(
+                        "topic" to trimmedQuery,
+                        "mode" to "manual",
                     ),
                 )
-
-                Spacer(Modifier.height(12.dp))
-
-                Button(
-                    onClick = {
-                        navigate(
-                            Screen.TopicDataSelect,
-                            mapOf(
-                                "topic" to trimmedQuery,
-                                "mode" to "manual"
-                            )
-                        )
-                    },
-                    enabled = hasQuery,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.60f),
-                        contentColor = Color.White,
-                        disabledContainerColor = Color.White.copy(alpha = 0.35f),
-                        disabledContentColor = Color.White.copy(alpha = 0.72f),
-                    ),
-                ) {
-                    Text(
-                        text = "이 주제로 데이터 선택",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+            },
+            onAiSuggestClick = {
+                if (!portalAnimating) {
+                    portalAnimating = true
                 }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp)
-                        .height(1.dp)
-                        .background(Color.White.copy(alpha = 0.22f))
-                )
-
-                Button(
-                    onClick = {
-                        navigate(
-                            Screen.AiSuggest,
-                            mapOf("mode" to "ai_topic_recommend")
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = AppColors.Blue,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-
-                    Spacer(Modifier.size(6.dp))
-
-                    Text(
-                        text = "AI 주제 추천",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Spacer(
-                modifier = Modifier.windowInsetsBottomHeight(WindowInsets.ime)
-            )
-        }
+            },
+        )
 
         LaunchedEffect(settingsPanelVisible, settingsPanelMounted) {
             if (settingsPanelMounted && !settingsPanelVisible) {
@@ -407,8 +265,353 @@ private fun HomeScreenContent(
                 },
             )
         }
+
+        if (portalAnimating) {
+            PortalExpandOverlay(
+                startTopLeft = portalCardTopLeft,
+                startSize = portalCardSize,
+                screenWidthPx = screenWidthPx,
+                screenHeightPx = screenHeightPx,
+                onFinished = {
+                    navigate(Screen.AiSuggest, HomePortalTransition.aiSuggestNavigationData())
+                },
+            )
+        }
         }
     }
+}
+
+@Composable
+private fun HomeContentColumn(
+    scrollState: ScrollState,
+    query: String,
+    isPortalAnimating: Boolean,
+    onQueryChange: (String) -> Unit,
+    onSettingsClick: () -> Unit,
+    onPromptCardPositioned: (Offset, IntSize) -> Unit,
+    onManualTopicClick: () -> Unit,
+    onAiSuggestClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 20.dp)
+            .padding(top = 36.dp),
+    ) {
+        Box(Modifier.fillMaxWidth()) {
+            SettingsMenuButton(
+                modifier = Modifier.align(Alignment.TopStart),
+                onClick = onSettingsClick,
+            )
+        }
+
+        Spacer(Modifier.height(42.dp))
+
+        HomeHeroHeader()
+
+        Spacer(Modifier.height(38.dp))
+
+        HomePromptCard(
+            query = query,
+            isPortalAnimating = isPortalAnimating,
+            onQueryChange = onQueryChange,
+            onPositioned = onPromptCardPositioned,
+            onManualTopicClick = onManualTopicClick,
+            onAiSuggestClick = onAiSuggestClick,
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Spacer(
+            modifier = Modifier.windowInsetsBottomHeight(WindowInsets.ime)
+        )
+    }
+}
+
+@Composable
+private fun HomeHeroHeader() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = AppColors.Blue,
+            modifier = Modifier.size(54.dp)
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            text = "SmartClipboardAI",
+            color = AppColors.Slate800,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Text(
+            text = "수집한 정보를 AI가 정리해드려요",
+            color = AppColors.Slate400,
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+private fun HomePromptCard(
+    query: String,
+    isPortalAnimating: Boolean,
+    onQueryChange: (String) -> Unit,
+    onPositioned: (Offset, IntSize) -> Unit,
+    onManualTopicClick: () -> Unit,
+    onAiSuggestClick: () -> Unit,
+) {
+    val hasQuery = query.trim().isNotEmpty()
+    val homeCardGradient = Brush.linearGradient(
+        listOf(
+            Color(0xFF2754D8),
+            Color(0xFF2C66F0),
+            Color(0xFF4387FF),
+        )
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                onPositioned(coordinates.positionInRoot(), coordinates.size)
+            }
+            .background(homeCardGradient, RoundedCornerShape(22.dp))
+            .padding(20.dp),
+    ) {
+        Text(
+            text = "무엇을 정리할까요?",
+            color = Color.White,
+            fontSize = 19.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+
+        Text(
+            text = "주제가 있다면 직접 입력하고, 없다면 AI에게 추천받아보세요.",
+            color = Color(0xFFD7E1FF),
+            fontSize = 11.sp
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            placeholder = {
+                Text(
+                    text = "회의 메모 정리, 여행 계획, 일정 캡처 분석",
+                    color = Color.White.copy(alpha = 0.50f),
+                    fontSize = 12.sp
+                )
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White.copy(alpha = 0.16f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.16f),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+            ),
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        Button(
+            onClick = onManualTopicClick,
+            enabled = hasQuery && !isPortalAnimating,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White.copy(alpha = 0.60f),
+                contentColor = Color.White,
+                disabledContainerColor = Color.White.copy(alpha = 0.35f),
+                disabledContentColor = Color.White.copy(alpha = 0.72f),
+            ),
+        ) {
+            Text(
+                text = "이 주제로 데이터 선택",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp)
+                .height(1.dp)
+                .background(Color.White.copy(alpha = 0.22f))
+        )
+
+        Button(
+            onClick = onAiSuggestClick,
+            enabled = !isPortalAnimating,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = AppColors.Blue,
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+
+            Spacer(Modifier.size(6.dp))
+
+            Text(
+                text = "AI 주제 추천",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun PortalExpandOverlay(
+    startTopLeft: Offset,
+    startSize: IntSize,
+    screenWidthPx: Float,
+    screenHeightPx: Float,
+    onFinished: () -> Unit,
+) {
+    val density = LocalDensity.current
+    val pressScale = remember { Animatable(1f) }
+    val glow = remember { Animatable(0f) }
+    val expand = remember { Animatable(0f) }
+    val darkReveal = remember { Animatable(0f) }
+    val fallbackLeftPx = with(density) { 20.dp.toPx() }
+    val fallbackTopPx = with(density) { 226.dp.toPx() }
+    val fallbackWidthPx = (screenWidthPx - with(density) { 40.dp.toPx() }).coerceAtLeast(1f)
+    val fallbackHeightPx = with(density) { 236.dp.toPx() }
+    val startWidthPx = if (startSize.width > 0) startSize.width.toFloat() else fallbackWidthPx
+    val startHeightPx = if (startSize.height > 0) startSize.height.toFloat() else fallbackHeightPx
+    val startLeftPx = if (startSize.width > 0) startTopLeft.x else fallbackLeftPx
+    val startTopPx = if (startSize.height > 0) startTopLeft.y else fallbackTopPx
+    val progress = expand.value
+    val leftPx = lerpFloat(startLeftPx, 0f, progress)
+    val topPx = lerpFloat(startTopPx, 0f, progress)
+    val widthPx = lerpFloat(startWidthPx, screenWidthPx, progress).coerceAtLeast(1f)
+    val heightPx = lerpFloat(startHeightPx, screenHeightPx, progress).coerceAtLeast(1f)
+    val cornerRadius = with(density) {
+        lerpFloat(22.dp.toPx(), 0f, progress).toDp()
+    }
+    val portalGradient = Brush.linearGradient(
+        listOf(
+            Color(0xFF2754D8),
+            Color(0xFF2C66F0),
+            Color(0xFF4387FF),
+        )
+    )
+
+    LaunchedEffect(Unit) {
+        launch {
+            pressScale.animateTo(
+                targetValue = 0.96f,
+                animationSpec = tween(HomePortalTransition.PressDurationMillis),
+            )
+            pressScale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(HomePortalTransition.PressDurationMillis),
+            )
+        }
+        delay(80)
+        launch {
+            glow.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 360),
+            )
+        }
+        delay(80)
+        launch {
+            expand.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(HomePortalTransition.ExpandDurationMillis),
+            )
+        }
+        delay(360)
+        darkReveal.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(HomePortalTransition.DarkRevealDurationMillis),
+        )
+        delay(40)
+        onFinished()
+        delay(HomePortalTransition.PostNavigateHoldMillis)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(onClick = {}),
+    ) {
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(leftPx.roundToInt(), topPx.roundToInt()) }
+                .size(
+                    width = with(density) { widthPx.toDp() },
+                    height = with(density) { heightPx.toDp() },
+                )
+                .graphicsLayer {
+                    scaleX = pressScale.value
+                    scaleY = pressScale.value
+                }
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(portalGradient),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        if (glow.value > 0.01f) {
+                            val radius = size.maxDimension * (0.16f + glow.value * 0.82f)
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.74f * glow.value),
+                                        Color(0xFF93C5FD).copy(alpha = 0.24f * glow.value),
+                                        Color.Transparent,
+                                    ),
+                                    center = Offset(size.width / 2f, size.height * 0.62f),
+                                    radius = radius,
+                                ),
+                                radius = radius,
+                                center = Offset(size.width / 2f, size.height * 0.62f),
+                            )
+                        }
+                    },
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = darkReveal.value }
+                .background(com.samsung.smartclipboard.presentation.DarkGradient),
+        )
+    }
+}
+
+private fun lerpFloat(start: Float, stop: Float, fraction: Float): Float {
+    return start + (stop - start) * fraction.coerceIn(0f, 1f)
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
