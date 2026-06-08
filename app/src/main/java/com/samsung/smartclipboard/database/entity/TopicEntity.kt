@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "topics",
-    indices = [Index(value = ["title"], unique = true)]
+    indices = [Index(value = ["title", "createdAt"], unique = true)]
 )
 data class TopicEntity(
     @PrimaryKey(autoGenerate = true)
