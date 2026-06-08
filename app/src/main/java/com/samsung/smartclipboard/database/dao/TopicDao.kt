@@ -97,4 +97,18 @@ interface TopicDao {
         status: String,
         updatedAt: Long
     )
+
+    @Query(
+        """
+        UPDATE topic_actions
+        SET status = :status,
+            updatedAt = :updatedAt
+        WHERE id = :actionId
+        """
+    )
+    suspend fun updateActionStatus(
+        actionId: Long,
+        status: String,
+        updatedAt: Long
+    )
 }
