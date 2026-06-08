@@ -50,6 +50,9 @@ data class HistoryUiState(
     val topics: List<HistoryTopicUi> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
+    // 선택 모드
+    val selectMode: Boolean = false,
+    val selectedIds: Set<Long> = emptySet(),
 )
 
 private data class ActionTypeUi(
@@ -122,7 +125,6 @@ class HistoryViewModel @Inject constructor(
         actions: List<TopicAction>,
         analysis: List<TopicAnalysis>,
     ): HistoryUiState {
-        val topicMap = topics.associateBy { it.id }
         val actionsByTopic = actions.groupBy { it.topicId }
         val analysisByTopic = analysis.groupBy { it.topicId }
 
@@ -159,6 +161,51 @@ class HistoryViewModel @Inject constructor(
             topics = historyTopics,
             isLoading = false,
             errorMessage = null,
+            selectMode = _uiState.value.selectMode,
+            selectedIds = _uiState.value.selectedIds,
         )
+    }
+
+    // === 선택 모드 ===
+
+    fun enterSelectMode(topicId: Long) {
+        _uiState.update {
+            it.copy(selectMode = true, selectedIds = setOf(topicId))
+        }
+    }
+
+    fun exitSelectMode() {
+        _uiState.update {
+            it.copy(selectMode = false, selectedIds = emptySet())
+        }
+    }
+
+    fun toggleSelected(topicId: Long) {
+        _uiState.update { state ->
+            val current = state.selectedIds
+            val newSelected = if (topicId in current) {
+                current - topicId
+            } else {
+                current + topicId
+            }
+            state.copy(selectedIds = newSelected)
+        }
+    }
+
+    fun selectAll() {
+        _uiState.update { state ->
+            state.copy(selectedIds = state.topics.map { it.id }.toSet())
+        }
+    }
+
+    fun deleteSelected() {
+        val ids = _uiState.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            dataRepository.deleteTopicsByIds(ids)
+            _uiState.update {
+                it.copy(selectMode = false, selectedIds = emptySet())
+            }
+        }
     }
 }
