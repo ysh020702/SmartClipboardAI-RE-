@@ -2,7 +2,7 @@ package com.samsung.smartclipboard.data.repository
 
 import android.util.Log
 import com.samsung.smartclipboard.data.ai.DefaultSourceExtractor
-import com.samsung.smartclipboard.data.ai.GeminiTopicAgent
+import com.samsung.smartclipboard.gemini.GeminiTaskAgent
 import com.samsung.smartclipboard.database.dao.DataItemDao
 import com.samsung.smartclipboard.database.dao.TopicDao
 import com.samsung.smartclipboard.database.dao.TopicSummaryRow
@@ -19,7 +19,7 @@ import com.samsung.smartclipboard.domain.model.TopicActionStatus
 import com.samsung.smartclipboard.domain.model.TopicActionType
 import com.samsung.smartclipboard.domain.model.TopicAnalysis
 import com.samsung.smartclipboard.domain.repository.DataRepository
-import com.samsung.smartclipboard.gemini.GeminiPurposeAnalyzer
+import com.samsung.smartclipboard.gemini.GeminiPurposeAgent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -28,9 +28,9 @@ import javax.inject.Inject
 class DataRepositoryImpl @Inject constructor(
     private val dataItemDao: DataItemDao,
     private val topicDao: TopicDao,
-    private val topicAgent: GeminiTopicAgent,
+    private val topicAgent: GeminiTaskAgent,
     private val sourceExtractor: DefaultSourceExtractor,
-    private val purposeAnalyzer: GeminiPurposeAnalyzer
+    private val purposeAnalyzer: GeminiPurposeAgent
 ) : DataRepository {
 
     override fun observeItems(): Flow<List<DataItem>> {
