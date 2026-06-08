@@ -2,6 +2,7 @@ package com.samsung.smartclipboard.domain.repository
 
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.TopicAction
+import com.samsung.smartclipboard.domain.model.TopicActionStatus
 import com.samsung.smartclipboard.domain.model.Topic
 import com.samsung.smartclipboard.domain.model.TopicAnalysis
 import kotlinx.coroutines.flow.Flow
@@ -63,4 +64,22 @@ interface DataRepository {
 
     /** 지정된 ID 목록에 해당하는 DataItem들을 반환한다 */
     suspend fun getItemsByIds(ids: List<Long>): List<DataItem>
+
+    /** TopicAction의 상태를 지정된 status로 업데이트한다 */
+    suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus)
+
+    /** 모든 토픽의 액션을 Flow로 관찰하여 반환한다 (히스토리 화면용) */
+    fun observeAllTopicActions(): Flow<List<TopicAction>>
+
+    /** 모든 토픽의 분석 결과를 Flow로 관찰하여 반환한다 (히스토리 화면용) */
+    fun observeAllTopicAnalysis(): Flow<List<TopicAnalysis>>
+
+    /** 지정된 ID의 TopicAction을 반환한다 */
+    suspend fun getActionById(actionId: Long): TopicAction?
+
+    /** 지정된 ID의 토픽과 관련된 모든 데이터(액션, 분석, cross-ref)를 삭제한다 */
+    suspend fun deleteTopicById(topicId: Long)
+
+    /** 여러 토픽을 한 번에 삭제한다 */
+    suspend fun deleteTopicsByIds(topicIds: List<Long>)
 }

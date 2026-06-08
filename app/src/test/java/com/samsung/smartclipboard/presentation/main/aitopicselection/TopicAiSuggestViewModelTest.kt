@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation.main.topicaisuggest
+package com.samsung.smartclipboard.presentation.main.aitopicselection
 
 import com.samsung.smartclipboard.domain.model.DataCluster
 import com.samsung.smartclipboard.domain.model.SuggestedTopic as DomainSuggestedTopic

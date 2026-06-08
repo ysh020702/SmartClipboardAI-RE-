@@ -265,6 +265,14 @@ class DataRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus) {
+        topicDao.updateActionStatus(
+            actionId = actionId,
+            status = status.name,
+            updatedAt = System.currentTimeMillis()
+        )
+    }
+
     override suspend fun fillPurposes() {
         val entities = dataItemDao.getItemsWithoutPurpose()
         if (entities.isEmpty()) return
@@ -290,6 +298,33 @@ class DataRepositoryImpl @Inject constructor(
     override suspend fun getItemsByIds(ids: List<Long>): List<DataItem> {
         if (ids.isEmpty()) return emptyList()
         return dataItemDao.getItemsByIds(ids).map { it.toDomain() }
+    }
+
+    override fun observeAllTopicActions(): Flow<List<TopicAction>> {
+        return topicDao.observeAllActions().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override fun observeAllTopicAnalysis(): Flow<List<TopicAnalysis>> {
+        return topicDao.observeAllAnalysis().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun getActionById(actionId: Long): TopicAction? {
+        return topicDao.getActionById(actionId)?.toDomain()
+    }
+
+    override suspend fun deleteTopicById(topicId: Long) {
+        topicDao.deleteActionsByTopicId(topicId)
+        topicDao.deleteAnalysisByTopicId(topicId)
+        topicDao.deleteCrossRefsByTopicId(topicId)
+        topicDao.deleteTopicById(topicId)
+    }
+
+    override suspend fun deleteTopicsByIds(topicIds: List<Long>) {
+        topicIds.forEach { id -> deleteTopicById(id) }
     }
 
     /**

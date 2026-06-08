@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation.main.topicselection
+package com.samsung.smartclipboard.presentation.main.taskselection
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -33,6 +33,7 @@ data class TopicActionCardUi(
     val title: String,
     val description: String,
     val statusLabel: String,
+    val statusColor: Pair<Color, Color>,
     val icon: ImageVector,
     val color: Color
 )
@@ -78,6 +79,7 @@ fun TopicAction.toTopicActionCardUi(): TopicActionCardUi {
         title = title,
         description = body,
         statusLabel = status.toDisplayLabel(),
+        statusColor = status.toStatusColor(),
         icon = typeUi.icon,
         color = typeUi.color
     )
@@ -96,6 +98,15 @@ private fun TopicActionStatus.toDisplayLabel(): String {
         TopicActionStatus.EDITED -> "수정됨"
         TopicActionStatus.EXECUTED -> "실행됨"
         TopicActionStatus.DISMISSED -> "제외됨"
+    }
+}
+
+private fun TopicActionStatus.toStatusColor(): Pair<Color, Color> {
+    return when (this) {
+        TopicActionStatus.DRAFT -> Color(0xFFDBEAFE) to AppColors.Blue           // 초안 = 파란색
+        TopicActionStatus.EDITED -> Color(0xFFFEF3C7) to Color(0xFFD97706)       // 수정됨 = 노란색
+        TopicActionStatus.EXECUTED -> Color(0xFFD1FAE5) to AppColors.Green        // 실행됨 = 초록색
+        TopicActionStatus.DISMISSED -> Color(0xFFF1F5F9) to AppColors.Slate400   // 제외됨 = 회색
     }
 }
 

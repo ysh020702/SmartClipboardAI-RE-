@@ -55,7 +55,11 @@ private val generatedDrafts = listOf(
 )
 
 @Composable
-fun AnalyzingScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Map<String, String>) {
+fun AnalyzingScreen(
+    navigate: (Screen, Map<String, String>) -> Unit,
+    data: Map<String, String>,
+    autoNavigate: Boolean = true,
+) {
     val selectedCount = data["selectedCount"] ?: "0"
     val topicName = data["topicName"]?.ifBlank { "수집한 항목" } ?: "수집한 항목"
     var stepIndex by remember { mutableStateOf(0) }
@@ -74,7 +78,9 @@ fun AnalyzingScreen(navigate: (Screen, Map<String, String>) -> Unit, data: Map<S
             delay(120)
         }
         delay(650)
-        navigate(Screen.TopicDetail, mapOf("topicId" to "1", "topicTitle" to topicName))
+        if (autoNavigate) {
+            navigate(Screen.TopicDetail, mapOf("topicId" to "1", "topicTitle" to topicName))
+        }
     }
 
     Column(

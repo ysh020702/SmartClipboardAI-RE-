@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.taskreview
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,12 +28,12 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -52,7 +52,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.delay
+import com.samsung.smartclipboard.presentation.AppColors
+import com.samsung.smartclipboard.presentation.BlueGradient
+import com.samsung.smartclipboard.presentation.FieldBlock
+import com.samsung.smartclipboard.presentation.ReadOnlyBox
+import com.samsung.smartclipboard.presentation.Screen
+import com.samsung.smartclipboard.presentation.actionConfigs
 
 @Composable
 fun ActionReviewScreen(
@@ -74,11 +79,6 @@ fun ActionReviewScreen(
     )
 
     if (uiState.isExecuted) {
-        LaunchedEffect(Unit) {
-            delay(1000)
-            navigate(Screen.TopicDetail, backData)
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,7 +97,16 @@ fun ActionReviewScreen(
             }
             Spacer(Modifier.height(18.dp))
             Text("실행 완료", color = AppColors.Slate800, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-            Text("상세 화면으로 돌아가는 중입니다.", color = AppColors.Slate400, fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("외부 앱으로 전송이 완료되었습니다.", color = AppColors.Slate400, fontSize = 12.sp)
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = { navigate(Screen.TopicDetail, backData) },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Blue, contentColor = Color.White),
+            ) {
+                Text("토픽 상세로 돌아가기", fontWeight = FontWeight.Bold)
+            }
         }
         return
     }
@@ -219,7 +228,14 @@ fun ActionReviewScreenContent(
                                 singleLine = true
                             )
                         } else {
-                            ReadOnlyBox { Text(uiState.title, color = AppColors.Slate800, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
+                            ReadOnlyBox {
+                                Text(
+                                    uiState.title,
+                                    color = AppColors.Slate800,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                     FieldBlock("본문") {
@@ -231,7 +247,14 @@ fun ActionReviewScreenContent(
                                 minLines = 7
                             )
                         } else {
-                            ReadOnlyBox { Text(uiState.body, color = AppColors.Slate800, fontSize = 12.sp, lineHeight = 18.sp) }
+                            ReadOnlyBox {
+                                Text(
+                                    uiState.body,
+                                    color = AppColors.Slate800,
+                                    fontSize = 12.sp,
+                                    lineHeight = 18.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -333,14 +356,31 @@ fun ActionReviewScreenContent(
                 }
                 Button(
                     onClick = { onIntent(ActionReviewIntent.ConfirmExecution) },
-                    enabled = !uiState.isEditing && !uiState.isRefining,
+                    enabled = !uiState.isEditing && !uiState.isRefining && !uiState.isExecuting,
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (uiState.isEditing) AppColors.Slate200 else config.color, contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = when {
+                            uiState.isEditing -> AppColors.Slate200
+                            uiState.isExecuting -> AppColors.Slate400
+                            else -> config.color
+                        },
+                        contentColor = Color.White
+                    ),
                 ) {
-                    Icon(Icons.Default.Check, null, modifier = Modifier.size(15.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("실행", fontWeight = FontWeight.Bold)
+                    if (uiState.isExecuting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("실행 중...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Check, null, modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("실행", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

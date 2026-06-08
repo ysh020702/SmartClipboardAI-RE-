@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation.main.topicselection
+package com.samsung.smartclipboard.presentation.main.taskselection
 
 import com.samsung.smartclipboard.domain.model.TopicAction
 import com.samsung.smartclipboard.domain.model.TopicActionStatus

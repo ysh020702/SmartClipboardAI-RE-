@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation.main.topicselection
+package com.samsung.smartclipboard.presentation.main.taskselection
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -196,7 +196,7 @@ private fun TopicActionRow(action: TopicActionCardUi, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.width(6.dp))
-                    Pill(action.statusLabel, AppColors.BlueSoft, AppColors.Blue)
+                    Pill(action.statusLabel, action.statusColor.first, action.statusColor.second)
                 }
                 Text(
                     text = action.description,

@@ -1,11 +1,15 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.taskreview
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
+import com.samsung.smartclipboard.domain.model.TopicActionStatus
 import com.samsung.smartclipboard.domain.repository.DataRepository
+import com.samsung.smartclipboard.domain.tool.ToolExecutor
+import com.samsung.smartclipboard.domain.tool.ToolRouter
 import com.samsung.smartclipboard.gemini.GeminiRefineAgent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +48,7 @@ data class ActionReviewUiState(
     val refineInput: String = "",
     val isRefining: Boolean = false,
     val isExecuted: Boolean = false,
+    val isExecuting: Boolean = false,
 
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -76,13 +81,16 @@ sealed interface ActionReviewIntent {
 @HiltViewModel
 class ActionReviewViewModel @Inject constructor(
     private val dataRepository: DataRepository,
-    private val refineAgent: GeminiRefineAgent
+    private val refineAgent: GeminiRefineAgent,
+    private val toolRouter: ToolRouter,
+    private val toolExecutor: ToolExecutor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ActionReviewUiState())
     val uiState: StateFlow<ActionReviewUiState> = _uiState.asStateFlow()
 
     private var currentActionDraft: AgentActionDraft? = null
+    private var currentActionId: Long? = null
     private var currentSourceItems: List<CandidateItem> = emptyList()
 
     fun onIntent(intent: ActionReviewIntent) {
@@ -97,7 +105,7 @@ class ActionReviewViewModel @Inject constructor(
             is ActionReviewIntent.CancelRefinement -> onCancelRefinement()
             is ActionReviewIntent.RevertToVersion -> revertToVersion(intent.version)
             is ActionReviewIntent.ToggleVersionMenu -> _uiState.update { it.copy(isVersionMenuExpanded = intent.expanded) }
-            is ActionReviewIntent.ConfirmExecution -> _uiState.update { it.copy(isExecuted = true) }
+            is ActionReviewIntent.ConfirmExecution -> confirmExecution()
             is ActionReviewIntent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
         }
     }
@@ -125,6 +133,7 @@ class ActionReviewViewModel @Inject constructor(
                     val newVersion = DraftVersion(newVersionNum, state.currentVersion, state.title, state.body, "직접 편집됨")
 
                     updateCurrentDraft(state.title, state.body)
+                    saveDraftToDb(state.title, state.body)
 
                     state.copy(
                         isEditing = false,
@@ -154,45 +163,52 @@ class ActionReviewViewModel @Inject constructor(
             )
         }
 
-        val topicId = topicIdStr.toLongOrNull()
         val actionId = data["actionId"]?.toLongOrNull()
 
-        if (topicId != null && actionId != null) {
-            fetchActionData(topicId, actionId)
+        if (actionId != null) {
+            fetchActionById(actionId)
+        } else {
+            setFailed("init", "actionId가 필요합니다.")
         }
     }
 
-    private fun fetchActionData(topicId: Long, actionId: Long) {
+    /**
+     * DB에서 actionId로 직접 조회하여 화면을 복원한다.
+     * 외부 앱 실행 후 돌아와도 동일한 화면 상태를 유지하기 위해 사용한다.
+     */
+    private fun fetchActionById(actionId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val topicActions = dataRepository.observeTopicActions(topicId).first()
-                val matchedAction = topicActions.find { it.id == actionId }
+                val action = dataRepository.getActionById(actionId)
 
-                if (matchedAction != null) {
+                if (action != null) {
+                    currentActionId = action.id
                     currentActionDraft = AgentActionDraft(
-                        type = matchedAction.type,
+                        type = action.type,
                         confidence = 1.0f,
-                        reason = "User initiated review from saved action",
-                        title = matchedAction.title,
-                        body = matchedAction.body,
-                        payload = matchedAction.editablePayload,
+                        reason = "Loaded from DB",
+                        title = action.title,
+                        body = action.body,
+                        payload = action.editablePayload,
                         sourceItemIds = emptyList()
                     )
 
-                    val topicItems = dataRepository.observeTopicItems(topicId).first()
+                    val topicItems = dataRepository.observeTopicItems(action.topicId).first()
                     currentSourceItems = topicItems.map { CandidateItem(it, 1.0f, "토픽 내 항목") }
 
-                    val initialVersion = DraftVersion(1, 0, matchedAction.title, matchedAction.body, "원본 초안")
+                    val initialVersion = DraftVersion(1, 0, action.title, action.body, "원본 초안")
 
                     _uiState.update {
                         it.copy(
-                            title = matchedAction.title,
-                            body = matchedAction.body,
+                            topicId = action.topicId.toString(),
+                            title = action.title,
+                            body = action.body,
                             currentVersion = 1,
                             parentVersion = 0,
                             history = listOf(initialVersion),
-                            isLoading = false
+                            isLoading = false,
+                            isExecuted = action.status == TopicActionStatus.EXECUTED
                         )
                     }
                 } else {
@@ -210,6 +226,7 @@ class ActionReviewViewModel @Inject constructor(
 
         if (targetVersion != null) {
             updateCurrentDraft(targetVersion.title, targetVersion.body)
+            saveDraftToDb(targetVersion.title, targetVersion.body)
 
             _uiState.update {
                 it.copy(
@@ -294,6 +311,9 @@ class ActionReviewViewModel @Inject constructor(
                         errorMessage = null
                     )
                 }
+
+                // AI 보완 결과를 DB에 저장하여 외부 앱 실행 후에도 복원 가능하도록 함
+                saveDraftToDb(refinedDraft.title, refinedDraft.body)
             } catch (e: Exception) {
                 setFailed("refine", "AI 보완 중 오류가 발생했습니다: ${e.message}")
             }
@@ -313,9 +333,73 @@ class ActionReviewViewModel @Inject constructor(
         )
     }
 
+    /**
+     * 현재 초안 내용을 DB에 저장한다.
+     * 외부 앱 실행 후 돌아와도 동일한 화면을 복원할 수 있도록 한다.
+     */
+    private fun saveDraftToDb(title: String, body: String) {
+        val actionId = currentActionId ?: return
+        viewModelScope.launch {
+            try {
+                dataRepository.updateTopicActionDraft(actionId, title, body)
+            } catch (e: Exception) {
+                // DB 저장 실패는 UI에 치명적이지 않으므로 로그만 남긴다
+                Log.w("ActionReview", "초안 DB 저장 실패: ${e.message}")
+            }
+        }
+    }
+
+    private fun confirmExecution() {
+        val draft = currentActionDraft
+        if (draft == null) {
+            _uiState.update { it.copy(errorMessage = "실행할 작업이 없습니다.") }
+            return
+        }
+
+        _uiState.update { it.copy(isExecuting = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            try {
+                // 1. ToolRouter로 action → tool 매핑
+                val routeResult = toolRouter.route(draft).getOrElse { error ->
+                    setFailed("route", "도구 매핑 실패: ${error.message}")
+                    return@launch
+                }
+
+                // 2. 필수 입력 누락 확인
+                if (routeResult.missingRequiredInputs.isNotEmpty()) {
+                    val missingKeys = routeResult.missingRequiredInputs.joinToString(", ") { it.label }
+                    setFailed("route", "필수 항목 누락: $missingKeys")
+                    return@launch
+                }
+
+                // 3. ToolExecutor로 실제 외부 앱 실행
+                val sessionId = "action_${currentActionId ?: System.currentTimeMillis()}"
+                val executionResult = toolExecutor.execute(
+                    sessionId = sessionId,
+                    action = routeResult.action,
+                    toolSpec = routeResult.toolSpec,
+                    payload = routeResult.resolvedPayload
+                )
+
+                if (executionResult.success) {
+                    // 4. DB 상태를 EXECUTED로 업데이트
+                    currentActionId?.let { id ->
+                        dataRepository.updateActionStatus(id, TopicActionStatus.EXECUTED)
+                    }
+                    _uiState.update { it.copy(isExecuting = false, isExecuted = true) }
+                } else {
+                    setFailed("execute", executionResult.message)
+                }
+            } catch (e: Exception) {
+                setFailed("execute", "실행 중 오류가 발생했습니다: ${e.message}")
+            }
+        }
+    }
+
     private fun setFailed(step: String, message: String) {
         _uiState.update {
-            it.copy(isRefining = false, isLoading = false, errorMessage = message)
+            it.copy(isRefining = false, isLoading = false, isExecuting = false, errorMessage = message)
         }
     }
 }

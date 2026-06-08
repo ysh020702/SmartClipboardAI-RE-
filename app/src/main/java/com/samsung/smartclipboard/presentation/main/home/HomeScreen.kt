@@ -231,8 +231,7 @@ fun HomeScreen(navigate: (Screen, Map<String, String>) -> Unit) {
             Button(
                 onClick = {
                     navigate(
-                        //Screen.TopicDataSelect,
-                        Screen.Data,
+                        Screen.TopicDataSelect,
                         mapOf(
                             "topic" to trimmedQuery,
                             "mode" to "manual"

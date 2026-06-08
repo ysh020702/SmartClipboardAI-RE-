@@ -8,7 +8,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class Screen { Home, Data, Tasks, TopicDetail, ActionReview, Storage, History, AiSuggest, Analyzing }
+enum class Screen { Home, Data, Tasks, TopicDetail, ActionReview, Storage, History, AiSuggest, Analyzing, TopicDataSelect }
 enum class NavTab { Home, Data, Tasks }
 enum class PermissionStatus { Unknown, Selecting, Granted, Partial, Denied }
 
