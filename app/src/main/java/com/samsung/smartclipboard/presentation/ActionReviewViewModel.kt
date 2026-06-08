@@ -5,7 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
+import com.samsung.smartclipboard.domain.model.TopicActionStatus
 import com.samsung.smartclipboard.domain.repository.DataRepository
+import com.samsung.smartclipboard.domain.tool.ToolExecutor
+import com.samsung.smartclipboard.domain.tool.ToolRouter
 import com.samsung.smartclipboard.gemini.GeminiRefineAgent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +47,7 @@ data class ActionReviewUiState(
     val refineInput: String = "",
     val isRefining: Boolean = false,
     val isExecuted: Boolean = false,
+    val isExecuting: Boolean = false,
 
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -76,13 +80,16 @@ sealed interface ActionReviewIntent {
 @HiltViewModel
 class ActionReviewViewModel @Inject constructor(
     private val dataRepository: DataRepository,
-    private val refineAgent: GeminiRefineAgent
+    private val refineAgent: GeminiRefineAgent,
+    private val toolRouter: ToolRouter,
+    private val toolExecutor: ToolExecutor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ActionReviewUiState())
     val uiState: StateFlow<ActionReviewUiState> = _uiState.asStateFlow()
 
     private var currentActionDraft: AgentActionDraft? = null
+    private var currentActionId: Long? = null
     private var currentSourceItems: List<CandidateItem> = emptyList()
 
     fun onIntent(intent: ActionReviewIntent) {
@@ -97,7 +104,7 @@ class ActionReviewViewModel @Inject constructor(
             is ActionReviewIntent.CancelRefinement -> onCancelRefinement()
             is ActionReviewIntent.RevertToVersion -> revertToVersion(intent.version)
             is ActionReviewIntent.ToggleVersionMenu -> _uiState.update { it.copy(isVersionMenuExpanded = intent.expanded) }
-            is ActionReviewIntent.ConfirmExecution -> _uiState.update { it.copy(isExecuted = true) }
+            is ActionReviewIntent.ConfirmExecution -> confirmExecution()
             is ActionReviewIntent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
         }
     }
@@ -170,6 +177,7 @@ class ActionReviewViewModel @Inject constructor(
                 val matchedAction = topicActions.find { it.id == actionId }
 
                 if (matchedAction != null) {
+                    currentActionId = matchedAction.id
                     currentActionDraft = AgentActionDraft(
                         type = matchedAction.type,
                         confidence = 1.0f,
@@ -313,9 +321,57 @@ class ActionReviewViewModel @Inject constructor(
         )
     }
 
+    private fun confirmExecution() {
+        val draft = currentActionDraft
+        if (draft == null) {
+            _uiState.update { it.copy(errorMessage = "실행할 작업이 없습니다.") }
+            return
+        }
+
+        _uiState.update { it.copy(isExecuting = true, errorMessage = null) }
+
+        viewModelScope.launch {
+            try {
+                // 1. ToolRouter로 action → tool 매핑
+                val routeResult = toolRouter.route(draft).getOrElse { error ->
+                    setFailed("route", "도구 매핑 실패: ${error.message}")
+                    return@launch
+                }
+
+                // 2. 필수 입력 누락 확인
+                if (routeResult.missingRequiredInputs.isNotEmpty()) {
+                    val missingKeys = routeResult.missingRequiredInputs.joinToString(", ") { it.label }
+                    setFailed("route", "필수 항목 누락: $missingKeys")
+                    return@launch
+                }
+
+                // 3. ToolExecutor로 실제 외부 앱 실행
+                val sessionId = "action_${currentActionId ?: System.currentTimeMillis()}"
+                val executionResult = toolExecutor.execute(
+                    sessionId = sessionId,
+                    action = routeResult.action,
+                    toolSpec = routeResult.toolSpec,
+                    payload = routeResult.resolvedPayload
+                )
+
+                if (executionResult.success) {
+                    // 4. DB 상태를 EXECUTED로 업데이트
+                    currentActionId?.let { id ->
+                        dataRepository.updateActionStatus(id, TopicActionStatus.EXECUTED)
+                    }
+                    _uiState.update { it.copy(isExecuting = false, isExecuted = true) }
+                } else {
+                    setFailed("execute", executionResult.message)
+                }
+            } catch (e: Exception) {
+                setFailed("execute", "실행 중 오류가 발생했습니다: ${e.message}")
+            }
+        }
+    }
+
     private fun setFailed(step: String, message: String) {
         _uiState.update {
-            it.copy(isRefining = false, isLoading = false, errorMessage = message)
+            it.copy(isRefining = false, isLoading = false, isExecuting = false, errorMessage = message)
         }
     }
 }

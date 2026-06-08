@@ -333,14 +333,31 @@ fun ActionReviewScreenContent(
                 }
                 Button(
                     onClick = { onIntent(ActionReviewIntent.ConfirmExecution) },
-                    enabled = !uiState.isEditing && !uiState.isRefining,
+                    enabled = !uiState.isEditing && !uiState.isRefining && !uiState.isExecuting,
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = if (uiState.isEditing) AppColors.Slate200 else config.color, contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = when {
+                            uiState.isEditing -> AppColors.Slate200
+                            uiState.isExecuting -> AppColors.Slate400
+                            else -> config.color
+                        },
+                        contentColor = Color.White
+                    ),
                 ) {
-                    Icon(Icons.Default.Check, null, modifier = Modifier.size(15.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("실행", fontWeight = FontWeight.Bold)
+                    if (uiState.isExecuting) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("실행 중...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Check, null, modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("실행", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
