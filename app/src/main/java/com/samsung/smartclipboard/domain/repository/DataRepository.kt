@@ -76,4 +76,10 @@ interface DataRepository {
 
     /** 지정된 ID의 TopicAction을 반환한다 */
     suspend fun getActionById(actionId: Long): TopicAction?
+
+    /** 지정된 ID의 토픽과 관련된 모든 데이터(액션, 분석, cross-ref)를 삭제한다 */
+    suspend fun deleteTopicById(topicId: Long)
+
+    /** 여러 토픽을 한 번에 삭제한다 */
+    suspend fun deleteTopicsByIds(topicIds: List<Long>)
 }
