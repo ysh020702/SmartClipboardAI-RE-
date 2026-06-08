@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class GeminiPurposeAnalyzer(
+class GeminiPurposeAgent(
     private val geminiManager: GeminiManager
 ) {
 

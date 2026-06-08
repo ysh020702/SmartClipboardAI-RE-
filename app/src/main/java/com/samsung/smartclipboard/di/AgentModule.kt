@@ -1,11 +1,10 @@
 package com.samsung.smartclipboard.di
 
 import android.content.Context
-import com.samsung.smartclipboard.gemini.GeminiActionPlanner
 import com.samsung.smartclipboard.gemini.GeminiClusterTopicAgent
 import com.samsung.smartclipboard.gemini.GeminiClusterer
 import com.samsung.smartclipboard.gemini.GeminiItemRecommendationAgent
-import com.samsung.smartclipboard.gemini.GeminiPurposeAnalyzer
+import com.samsung.smartclipboard.gemini.GeminiPurposeAgent
 import com.samsung.smartclipboard.gemini.GeminiTopicPlanner
 import com.samsung.smartclipboard.data.retrieval.LocalCandidateItemRanker
 import com.samsung.smartclipboard.data.retrieval.LocalClusterer
@@ -54,11 +53,6 @@ object AgentModule {
     }
 
     @Provides @Singleton
-    fun provideActionPlanner(geminiManager: GeminiManager): GeminiActionPlanner {
-        return GeminiActionPlanner(geminiManager)
-    }
-
-    @Provides @Singleton
     fun provideToolRegistry(): ToolRegistry {
         return ToolRegistryImpl()
     }
@@ -94,7 +88,7 @@ object AgentModule {
     }
 
     @Provides @Singleton
-    fun providePurposeAnalyzer(geminiManager: GeminiManager): GeminiPurposeAnalyzer {
-        return GeminiPurposeAnalyzer(geminiManager)
+    fun providePurposeAnalyzer(geminiManager: GeminiManager): GeminiPurposeAgent {
+        return GeminiPurposeAgent(geminiManager)
     }
 }
