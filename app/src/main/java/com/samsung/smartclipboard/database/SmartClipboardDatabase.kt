@@ -25,7 +25,7 @@ import com.samsung.smartclipboard.database.entity.DataItemEntity
         TopicActionEntity::class,
         KnowledgeEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(KeywordConverters::class)
@@ -170,6 +170,20 @@ abstract class SmartClipboardDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE data_items ADD COLUMN purpose TEXT")
                 db.execSQL("ALTER TABLE data_items ADD COLUMN purposeKeyword TEXT")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 기존 title 단일 unique index 삭제
+                db.execSQL("DROP INDEX IF EXISTS index_topics_title")
+                // (title, createdAt) 복합 unique index 생성
+                db.execSQL(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS index_topics_title_createdAt
+                    ON topics(title, createdAt)
+                    """.trimIndent()
+                )
             }
         }
     }
