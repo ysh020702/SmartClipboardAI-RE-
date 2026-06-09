@@ -248,7 +248,7 @@ internal fun List<DataCluster>.toTopicAiSuggestionUi(): List<TopicAiSuggestionUi
                 )
             }
         }
-    }.distinctBy { it.title }
+    }.distinctBy { it.title to it.id }
 }
 
 private fun DataCluster.toFallbackSuggestion(clusterLabel: String): TopicAiSuggestionUi {
