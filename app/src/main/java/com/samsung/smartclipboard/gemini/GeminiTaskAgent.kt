@@ -79,7 +79,7 @@ class GeminiTaskAgent @Inject constructor(
 
     private fun buildPrompt(topic: Topic, items: List<DataItem>, userInstruction: String?): String = """
         당신은 SmartClipboardAI의 스마트 작업 계획 및 초안 생성 Agent(비서)입니다.
-        사용자가 선택한 Topic과 자료 목록(DataItems)을 분석하여 실행 가능한 후속 작업(Action) 초안을 생성하세요.
+        사용자가 선택한 **주제(Topic)**를 핵심 목적으로 삼고, 관련 자료(DataItems)를 근거로 활용하여 실행 가능한 후속 작업(Action) 초안을 생성하세요.
 
         ## 반드시 지킬 규칙 (CRITICAL)
         - 응답은 반드시 JSON object 하나만 출력한다.
@@ -91,13 +91,16 @@ class GeminiTaskAgent @Inject constructor(
         - body는 사용자가 바로 복사하거나 편집하여 사용할 수 있는 '완성된 초안' 수준으로 작성한다.
         - 개인정보, URL, 주소, 연락처 등 민감한 값을 불필요하게 그대로 재출력하지 말고, 필요시 [OOO] 형태로 마스킹 처리한다.
         - Action은 최소 1개에서 최대 5개까지만 생성한다.
+        - **주제(Topic)의 의도를 최우선으로 반영하여 Action을 생성하라.** 단순히 자료를 요약하는 것이 아니라, 주제가 요구하는 방향과 목적에 맞는 Action을 도출해야 한다.
+        - summary와 keyPoints도 주제의 관점에서 자료를 해석한 내용이어야 한다.
 
         ## 사용 가능한 sourceItemId 목록
         ${items.joinToString(", ") { it.id.toString() }}
 
         ## 사용자 주제 (Topic)
         - title: ${topic.title}
-        ${userInstruction?.takeIf { it.isNotBlank() }?.let { "## 사용자 추가 지시\n$it\n" } ?: ""}
+        - 설명: 사용자가 "${topic.title}"이라는 주제로 ${topic.itemCount}개의 자료를 모았습니다. 이 주제의 의도와 목적을 파악하고, 그에 맞는 작업을 생성하세요.
+        ${userInstruction?.takeIf { it.isNotBlank() }?.let { "- 사용자 추가 지시: $it\n" } ?: ""}
         ## 분석할 자료 목록 (${items.size}개)
         ${buildItemsJson(items)}
 
