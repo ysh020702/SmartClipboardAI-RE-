@@ -3,6 +3,9 @@ package com.samsung.smartclipboard.gemini
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.ItemRecommendationResult
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
+import com.samsung.smartclipboard.gemini.GeminiUtils.contentPreview
+import com.samsung.smartclipboard.gemini.GeminiUtils.escapeJson
+import com.samsung.smartclipboard.gemini.GeminiUtils.formatDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -99,20 +102,15 @@ class GeminiItemRecommendationAgent(
               {
                 "id": ${c.item.id},
                 "type": "${c.item.type.name}",
-                "title": ${c.item.title?.let { "\"${GeminiUtils.escapeJson(it)}\"" }},
-                "source": ${c.item.source?.let { "\"${GeminiUtils.escapeJson(it)}\"" }},
-                "mimeType": ${c.item.mimeType?.let { "\"${GeminiUtils.escapeJson(it)}\"" }},
-                "contentPreview": "${
-            GeminiUtils.escapeJson(
-                GeminiUtils.contentPreview(
-                    c.item,
-                    1000
-                )
+                "title": ${c.item.title?.let { "\"${escapeJson(it)}\"" }},
+                "source": ${c.item.source?.let { "\"${escapeJson(it)}\"" }},
+                "mimeType": ${c.item.mimeType?.let { "\"${escapeJson(it)}\"" }},
+                "contentPreview": "${escapeJson(contentPreview(c.item, 1000)
             )
         }",
-                "createdAt": "${GeminiUtils.formatDate(c.item.createdAt)}",
+                "createdAt": "${formatDate(c.item.createdAt)}",
                 "localScore": ${c.relevanceScore},
-                "localReason": "${GeminiUtils.escapeJson(c.relevanceReason)}"
+                "localReason": "${escapeJson(c.relevanceReason)}"
               }
             """.trimIndent()
     }}
