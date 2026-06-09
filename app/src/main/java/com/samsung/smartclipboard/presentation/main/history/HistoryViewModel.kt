@@ -212,4 +212,11 @@ class HistoryViewModel @Inject constructor(
             }
         }
     }
+
+    fun deleteTopicsByIds(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            dataRepository.deleteTopicsByIds(ids)
+        }
+    }
 }
