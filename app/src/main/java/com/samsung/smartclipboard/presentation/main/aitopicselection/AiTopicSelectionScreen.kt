@@ -212,19 +212,6 @@ fun TopicAiSuggestScreen(
                 viewModel.selectSuggestion(suggestion.id)
             }
         }
-        item {
-            Button(
-                onClick = { navigate(Screen.Data, emptyMap()) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AppColors.Slate500),
-                border = BorderStroke(1.dp, AppColors.Slate200),
-            ) {
-                Text("데이터 직접 선택", fontWeight = FontWeight.Bold)
-            }
-        }
     }
 }
 
