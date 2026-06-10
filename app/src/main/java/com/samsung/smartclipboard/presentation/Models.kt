@@ -9,6 +9,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class Screen { Home, Data, Tasks, TopicDetail, ActionReview, Storage, History, AiSuggest, Analyzing, TopicDataSelect }
+
+enum class StepStatus { Pending, Running, Success, Failed }
+
+data class AnalysisStep(
+    val label: String,
+    val status: StepStatus = StepStatus.Pending,
+    val detail: String? = null,
+)
 enum class NavTab { Home, Data, Tasks }
 enum class PermissionStatus { Unknown, Selecting, Granted, Partial, Denied }
 
