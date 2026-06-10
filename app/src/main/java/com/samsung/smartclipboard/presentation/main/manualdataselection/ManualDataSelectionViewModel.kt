@@ -6,6 +6,8 @@ import com.samsung.smartclipboard.di.IoDispatcher
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import com.samsung.smartclipboard.gemini.GeminiFindData
+import com.samsung.smartclipboard.presentation.AnalysisStep
+import com.samsung.smartclipboard.presentation.StepStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -28,6 +31,7 @@ data class TopicDataSelectionUiState(
     val isAiRecommending: Boolean = false,
     val isCreatingTask: Boolean = false,
     val errorMessage: String? = null,
+    val analysisSteps: List<AnalysisStep> = emptyList(),
 )
 
 sealed interface TopicDataSelectionEffect {
@@ -151,48 +155,111 @@ class TopicDataSelectionViewModel @Inject constructor(
                 it.copy(
                     isCreatingTask = true,
                     errorMessage = null,
+                    analysisSteps = listOf(
+                        AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running, "데이터 소스에서 항목을 검색하고 있어요"),
+                        AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Pending),
+                        AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
+                    ),
                 )
             }
 
             try {
-                val topicId = withContext(ioDispatcher) {
-                    val createdTopicId = dataRepository.addItemsToTopic(
+                // 첫 단계 진입 시 1초 딜레이 (사용자가 상태 변화를 인지할 시간)
+                delay(1000)
+
+                // Step 1: 데이터 불러오기
+                val createdTopicId = withContext(ioDispatcher) {
+                    dataRepository.addItemsToTopic(
                         title = topicTitle,
                         itemIds = itemIds,
                         addedBy = "USER",
                     )
-                    val analysisCreated = dataRepository.runTopicAnalysis(createdTopicId)
-                    val hasActions = dataRepository.observeTopicActions(createdTopicId).first().isNotEmpty()
-                    if (!analysisCreated && !hasActions) {
-                        throw IllegalStateException("Topic 분석에 실패했습니다.")
-                    }
-                    if (!hasActions) {
-                        throw IllegalStateException("Topic action 초안을 만들지 못했습니다.")
-                    }
-                    createdTopicId
                 }
+
+                _uiState.update {
+                    it.copy(
+                        analysisSteps = listOf(
+                            AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running, "텍스트 패턴과 이미지 내용을 파악하고 있어요"),
+                            AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
+                        ),
+                    )
+                }
+
+                // Step 2: 분석 실행
+                val analysisCreated = withContext(ioDispatcher) {
+                    dataRepository.runTopicAnalysis(createdTopicId)
+                }
+
+                _uiState.update {
+                    it.copy(
+                        analysisSteps = listOf(
+                            AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Success),
+                            AnalysisStep("실행 초안 준비 중", StepStatus.Running, "분석 결과로 실행 가능한 초안을 작성하고 있어요"),
+                        ),
+                    )
+                }
+
+                // Step 3: 실행 초안 생성
+                val hasActions = withContext(ioDispatcher) {
+                    dataRepository.observeTopicActions(createdTopicId).first().isNotEmpty()
+                }
+                if (!analysisCreated && !hasActions) {
+                    throw IllegalStateException("Topic 분석에 실패했습니다.")
+                }
+                if (!hasActions) {
+                    throw IllegalStateException("Topic action 초안을 만들지 못했습니다.")
+                }
+
+                // 마지막 단계 완료 후 1초 딜레이 (사용자가 완료 상태를 인지할 시간)
+                delay(1000)
 
                 _uiState.update {
                     it.copy(
                         isCreatingTask = false,
                         errorMessage = null,
+                        analysisSteps = emptyList(),
                     )
                 }
 
                 _effects.send(
                     TopicDataSelectionEffect.NavigateToTopicDetail(
-                        topicId = topicId,
+                        topicId = createdTopicId,
                         topicTitle = topicTitle,
                     )
                 )
             } catch (e: Exception) {
+                // 실패한 단계까지는 Success, 실패한 단계는 Failed, 이후는 Pending
+                val currentSteps = _uiState.value.analysisSteps
+                val failedIndex = currentSteps.indexOfFirst { it.status == StepStatus.Running }
+                    .coerceAtLeast(0)
+                val updatedSteps = currentSteps.mapIndexed { index, step ->
+                    when {
+                        index < failedIndex -> step.copy(status = StepStatus.Success)
+                        index == failedIndex -> step.copy(status = StepStatus.Failed)
+                        else -> step.copy(status = StepStatus.Pending)
+                    }
+                }
+
                 _uiState.update {
                     it.copy(
                         isCreatingTask = false,
                         errorMessage = e.message ?: "실행 초안 생성에 실패했습니다.",
+                        analysisSteps = updatedSteps,
                     )
                 }
             }
+        }
+    }
+
+    fun resetAnalysisSteps() {
+        _uiState.update {
+            it.copy(
+                isCreatingTask = false,
+                errorMessage = null,
+                analysisSteps = emptyList(),
+            )
         }
     }
 }

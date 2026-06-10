@@ -101,7 +101,7 @@ fun TopicDataSelectionScreen(
         }
     }
 
-    if (uiState.isCreatingTask) {
+    if (uiState.isCreatingTask || uiState.analysisSteps.isNotEmpty()) {
         AnalyzingScreen(
             navigate = navigate,
             data = mapOf(
@@ -109,6 +109,8 @@ fun TopicDataSelectionScreen(
                 "topicName" to topicTitle,
             ),
             autoNavigate = false,
+            steps = uiState.analysisSteps.ifEmpty { null },
+            onGoBack = { viewModel.resetAnalysisSteps() },
         )
         return
     }
