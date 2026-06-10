@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.presentation
+package com.samsung.smartclipboard.presentation.main.aitopicselection
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -41,6 +41,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.samsung.smartclipboard.presentation.AnalysisStep
+import com.samsung.smartclipboard.presentation.DarkGradient
+import com.samsung.smartclipboard.presentation.Screen
+import com.samsung.smartclipboard.presentation.StepStatus
 import kotlinx.coroutines.delay
 
 private val analyzingSteps = listOf(
@@ -136,12 +140,12 @@ fun AnalyzingScreen(
             .padding(horizontal = 28.dp, vertical = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 실패 시 뒤로가기 버튼
+        // 실패 시 홈으로 돌아가기 버튼
         if (hasFailure) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onGoBack?.invoke() ?: navigate(Screen.Home, emptyMap()) }
+                    .clickable { navigate(Screen.Home, emptyMap()) }
                     .clip(RoundedCornerShape(14.dp))
                     .background(Color.White.copy(alpha = 0.12f))
                     .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
@@ -156,7 +160,7 @@ fun AnalyzingScreen(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "이전으로 돌아가기",
+                    "홈으로 돌아가기",
                     color = Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -262,7 +266,7 @@ fun AnalyzingScreen(
                 else -> "AI 에이전트가 분석 중입니다..."
             },
             color = if (hasFailure) Color(0xFFFCA5A5).copy(alpha = 0.70f) else Color(0xFF93C5FD).copy(alpha = 0.50f),
-            fontSize = 10.sp,
+            fontSize = 10.sp
         )
     }
 }

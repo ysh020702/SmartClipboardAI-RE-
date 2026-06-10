@@ -1,6 +1,15 @@
 package com.samsung.smartclipboard.presentation.main.aitopicselection
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,7 +60,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.samsung.smartclipboard.presentation.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AnalysisStep
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.DarkGradient
@@ -87,6 +95,27 @@ fun TopicAiSuggestionUi.toTopicAiSuggestionCardUi(): TopicAiSuggestionCardUi {
     )
 }
 
+internal enum class TopicAiSuggestContent {
+    Loading,
+    Results,
+    Creating,
+}
+
+internal fun resolveTopicAiSuggestContent(
+    uiState: TopicAiSuggestUiState,
+    preferInitialLoading: Boolean,
+): TopicAiSuggestContent {
+    return when {
+        uiState.isCreatingTopic || uiState.creatingSteps.isNotEmpty() -> TopicAiSuggestContent.Creating
+        uiState.isLoading || uiState.loadingSteps.isNotEmpty() -> TopicAiSuggestContent.Loading
+        preferInitialLoading && uiState.suggestions.isEmpty() && uiState.errorMessage == null -> {
+            TopicAiSuggestContent.Loading
+        }
+        else -> TopicAiSuggestContent.Results
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun TopicAiSuggestScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
@@ -95,6 +124,7 @@ fun TopicAiSuggestScreen(
 ) {
     val skipLoading = data["skipLoading"] == "true"
     val query = data["query"].orEmpty()
+    val isHomeAiRecommendLaunch = data["mode"] == "ai_topic_recommend"
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     BackHandler(enabled = true){
@@ -121,31 +151,82 @@ fun TopicAiSuggestScreen(
         }
     }
 
-    if (uiState.isCreatingTopic || uiState.creatingSteps.isNotEmpty()) {
-        val selectedSuggestion = uiState.suggestions.firstOrNull { it.id == uiState.selectedSuggestionId }
-        AnalyzingScreen(
-            navigate = navigate,
-            data = mapOf(
-                "selectedCount" to (selectedSuggestion?.itemCount?.toString() ?: "0"),
-                "topicName" to (selectedSuggestion?.title ?: "주제"),
-            ),
-            autoNavigate = false,
-            steps = uiState.creatingSteps.ifEmpty { null },
-            onGoBack = { viewModel.resetCreatingSteps() },
-        )
-        return
-    }
+    val contentState = resolveTopicAiSuggestContent(
+        uiState = uiState,
+        preferInitialLoading = isHomeAiRecommendLaunch && !skipLoading,
+    )
 
-    if (uiState.isLoading || uiState.loadingSteps.isNotEmpty()) {
-        AiSuggestLoading(
-            query = query,
-            steps = uiState.loadingSteps,
-            onClose = { navigate(Screen.Home, emptyMap()) },
-            onRetry = { viewModel.resetLoadingSteps() },
-        )
-        return
-    }
+    AnimatedContent(
+        targetState = contentState,
+        modifier = Modifier.fillMaxSize(),
+        transitionSpec = {
+            fadeIn(
+                animationSpec = tween(
+                    durationMillis = 280,
+                    easing = FastOutSlowInEasing,
+                ),
+            ) + slideInHorizontally(
+                animationSpec = tween(
+                    durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
+                    easing = FastOutSlowInEasing,
+                ),
+                initialOffsetX = { it / 5 },
+            ) togetherWith fadeOut(
+                animationSpec = tween(
+                    durationMillis = 220,
+                    easing = FastOutSlowInEasing,
+                ),
+            ) + slideOutHorizontally(
+                animationSpec = tween(
+                    durationMillis = 280,
+                    easing = FastOutSlowInEasing,
+                ),
+                targetOffsetX = { -it / 8 },
+            )
+        },
+        label = "topic_ai_suggest_content",
+    ) { target ->
+        when (target) {
+            TopicAiSuggestContent.Creating -> {
+                val selectedSuggestion = uiState.suggestions.firstOrNull { it.id == uiState.selectedSuggestionId }
+                AnalyzingScreen(
+                    navigate = navigate,
+                    data = mapOf(
+                        "selectedCount" to (selectedSuggestion?.itemCount?.toString() ?: "0"),
+                        "topicName" to (selectedSuggestion?.title ?: "주제"),
+                    ),
+                    autoNavigate = false,
+                    steps = uiState.creatingSteps.ifEmpty { null },
+                    onGoBack = { viewModel.resetCreatingSteps() },
+                )
+            }
 
+            TopicAiSuggestContent.Loading -> {
+                AiSuggestLoading(
+                    query = query,
+                    steps = uiState.loadingSteps,
+                    onClose = { navigate(Screen.Home, emptyMap()) },
+                    onRetry = { viewModel.resetLoadingSteps() },
+                )
+            }
+
+            TopicAiSuggestContent.Results -> TopicAiSuggestResults(
+                query = query,
+                uiState = uiState,
+                navigate = navigate,
+                onSelectSuggestion = viewModel::selectSuggestion,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopicAiSuggestResults(
+    query: String,
+    uiState: TopicAiSuggestUiState,
+    navigate: (Screen, Map<String, String>) -> Unit,
+    onSelectSuggestion: (String) -> Unit,
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -214,7 +295,7 @@ fun TopicAiSuggestScreen(
                 enabled = uiState.canSelectSuggestion,
                 isCreating = uiState.isCreatingSuggestion(suggestion.id),
             ) {
-                viewModel.selectSuggestion(suggestion.id)
+                onSelectSuggestion(suggestion.id)
             }
         }
         item {

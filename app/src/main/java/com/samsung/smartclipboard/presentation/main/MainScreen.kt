@@ -1,5 +1,6 @@
 package com.samsung.smartclipboard.presentation.main
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -46,8 +47,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.samsung.smartclipboard.presentation.main.taskreview.ActionReviewScreen
 import com.samsung.smartclipboard.presentation.main.aitopicselection.TopicAiSuggestScreen
-import com.samsung.smartclipboard.presentation.AnalyzingScreen
+import com.samsung.smartclipboard.presentation.main.aitopicselection.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
+import com.samsung.smartclipboard.presentation.DarkGradient
 import com.samsung.smartclipboard.presentation.GradientButton
 import com.samsung.smartclipboard.presentation.main.history.HistoryScreen
 import com.samsung.smartclipboard.presentation.main.home.HomeScreen
@@ -92,45 +94,63 @@ private fun MainScreenContent(
     }
 
     Scaffold(
-        containerColor = AppColors.Surface,
+        containerColor = Color.Transparent,
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(AppColors.Surface),
+                .background(DarkGradient),
         ) {
             NavHost(
                 navController = navController,
                 startDestination = MainRoutes.routeFor(Screen.Home, emptyMap()),
                 modifier = Modifier.fillMaxSize(),
                 enterTransition = {
-                    fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 280,
-                            easing = FastOutSlowInEasing,
-                        ),
-                    ) + slideInHorizontally(
-                        animationSpec = tween(
-                            durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
-                            easing = FastOutSlowInEasing,
-                        ),
-                        initialOffsetX = { it / 5 },
-                    )
+                    if (isPortalAiSuggestTransition()) {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        )
+                    } else {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + slideInHorizontally(
+                            animationSpec = tween(
+                                durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
+                                easing = FastOutSlowInEasing,
+                            ),
+                            initialOffsetX = { it / 5 },
+                        )
+                    }
                 },
                 exitTransition = {
-                    fadeOut(
-                        animationSpec = tween(
-                            durationMillis = 220,
-                            easing = FastOutSlowInEasing,
-                        ),
-                    ) + slideOutHorizontally(
-                        animationSpec = tween(
-                            durationMillis = 280,
-                            easing = FastOutSlowInEasing,
-                        ),
-                        targetOffsetX = { -it / 8 },
-                    )
+                    if (isPortalAiSuggestTransition()) {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        )
+                    } else {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 220,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + slideOutHorizontally(
+                            animationSpec = tween(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            ),
+                            targetOffsetX = { -it / 8 },
+                        )
+                    }
                 },
                 popEnterTransition = {
                     fadeIn(
@@ -336,4 +356,14 @@ private fun NavHostController.navigateTo(
 
 private fun NavBackStackEntry.navData(): Map<String, String> {
     return MainRoutes.decodeNavData(arguments?.getString(MainRoutes.NavDataArg))
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isPortalAiSuggestTransition(): Boolean {
+    return initialState.routeBase() == "home" &&
+        targetState.routeBase() == "aiSuggest" &&
+        targetState.navData()["mode"] == "ai_topic_recommend"
+}
+
+private fun NavBackStackEntry.routeBase(): String? {
+    return destination.route?.substringBefore("?")
 }

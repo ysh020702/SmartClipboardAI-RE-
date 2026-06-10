@@ -85,4 +85,16 @@ class TopicAiSuggestViewModelTest {
         assertTrue(state.isCreatingSuggestion("cluster_3:0"))
         assertFalse(state.isCreatingSuggestion("cluster_4:0"))
     }
+
+    @Test
+    fun `home ai recommend launch starts with loading content before viewmodel updates`() {
+        val state = TopicAiSuggestUiState()
+
+        val content = resolveTopicAiSuggestContent(
+            uiState = state,
+            preferInitialLoading = true,
+        )
+
+        assertEquals(TopicAiSuggestContent.Loading, content)
+    }
 }

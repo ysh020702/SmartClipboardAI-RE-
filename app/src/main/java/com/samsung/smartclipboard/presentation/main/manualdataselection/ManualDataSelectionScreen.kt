@@ -55,7 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
-import com.samsung.smartclipboard.presentation.AnalyzingScreen
+import com.samsung.smartclipboard.presentation.main.aitopicselection.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.IconButtonPlain
 import com.samsung.smartclipboard.presentation.Pill
