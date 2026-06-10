@@ -156,18 +156,14 @@ class TopicDataSelectionViewModel @Inject constructor(
                     isCreatingTask = true,
                     errorMessage = null,
                     analysisSteps = listOf(
-                        AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running, "데이터 소스에서 항목을 검색하고 있어요"),
-                        AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Pending),
-                        AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
+                        AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running),
+                        AnalysisStep("텍스트와 이미지 분석 대기", StepStatus.Pending),
+                        AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
                     ),
                 )
             }
 
             try {
-                // 첫 단계 진입 시 1초 딜레이 (사용자가 상태 변화를 인지할 시간)
-                delay(1000)
-
-                // Step 1: 데이터 불러오기
                 val createdTopicId = withContext(ioDispatcher) {
                     dataRepository.addItemsToTopic(
                         title = topicTitle,
@@ -175,13 +171,13 @@ class TopicDataSelectionViewModel @Inject constructor(
                         addedBy = "USER",
                     )
                 }
-
+                delay(650)
                 _uiState.update {
                     it.copy(
                         analysisSteps = listOf(
-                            AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Success),
-                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running, "텍스트 패턴과 이미지 내용을 파악하고 있어요"),
-                            AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
+                            AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running),
+                            AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
                         ),
                     )
                 }
@@ -190,13 +186,13 @@ class TopicDataSelectionViewModel @Inject constructor(
                 val analysisCreated = withContext(ioDispatcher) {
                     dataRepository.runTopicAnalysis(createdTopicId)
                 }
-
+                delay(650)
                 _uiState.update {
                     it.copy(
                         analysisSteps = listOf(
-                            AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Success),
-                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Success),
-                            AnalysisStep("실행 초안 준비 중", StepStatus.Running, "분석 결과로 실행 가능한 초안을 작성하고 있어요"),
+                            AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
+                            AnalysisStep("실행 초안 준비 중", StepStatus.Running),
                         ),
                     )
                 }
@@ -211,9 +207,19 @@ class TopicDataSelectionViewModel @Inject constructor(
                 if (!hasActions) {
                     throw IllegalStateException("Topic action 초안을 만들지 못했습니다.")
                 }
+                delay(650)
+                _uiState.update {
+                    it.copy(
+                        analysisSteps = listOf(
+                            AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
+                            AnalysisStep("실행 초안 준비 성공", StepStatus.Success),
+                        ),
+                    )
+                }
 
                 // 마지막 단계 완료 후 1초 딜레이 (사용자가 완료 상태를 인지할 시간)
-                delay(1000)
+                delay(650)
 
                 _uiState.update {
                     it.copy(
