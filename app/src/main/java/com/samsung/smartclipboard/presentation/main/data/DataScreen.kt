@@ -94,6 +94,7 @@ fun DataScreen(
 
     BackHandler(enabled = true) {
         when {
+            previewItem != null -> previewItem = null
             uiState.selectMode -> dataViewModel.exitSelectMode()
             else -> navigateBack()
         }

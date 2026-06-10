@@ -126,17 +126,20 @@ internal fun SlidePanel(
     openInstantly: Boolean = false,
     externalDragOffsetPx: Float? = null,
     onDismiss: () -> Unit,
+    onBack: (() -> Unit)? = onDismiss,
     onDismissAnimationFinished: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
-    BackHandler(onBack = onDismiss)
+    onBack?.let { backAction ->
+        BackHandler(enabled = visible, onBack = backAction)
+    }
     val scope = rememberCoroutineScope()
 
     Popup(
         alignment = Alignment.TopStart,
         properties = PopupProperties(
-            focusable = true,
-            dismissOnBackPress = true,
+            focusable = false,
+            dismissOnBackPress = false,
             dismissOnClickOutside = false,
         ),
     ) {
@@ -506,6 +509,7 @@ internal fun HomeSettingsPanel(
         direction = SlideDirection.FromLeft,
         openInstantly = openInstantly,
         externalDragOffsetPx = externalDragOffsetPx,
+        onBack = onHome,
         onDismiss = onDismiss,
         onDismissAnimationFinished = onDismissAnimationFinished,
     ) {
@@ -683,6 +687,7 @@ internal fun HomeDataPanel(
         visible = visible,
         direction = SlideDirection.FromRight,
         externalDragOffsetPx = externalDragOffsetPx,
+        onBack = null,
         onDismiss = onDismiss,
         onDismissAnimationFinished = onDismissAnimationFinished,
     ) {

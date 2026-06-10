@@ -195,7 +195,6 @@ private fun HomeScreenContent(
                     onDismiss = onSettingsPanelDismiss,
                     onDismissAnimationFinished = onSettingsPanelDismissAnimationFinished,
                     onHome = {
-                        onNavigate(Screen.Home, emptyMap())
                         onSettingsPanelDismiss()
                     },
                     onNavigate = onNavigate,
