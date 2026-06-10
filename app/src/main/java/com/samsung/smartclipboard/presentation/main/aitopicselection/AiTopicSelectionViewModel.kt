@@ -93,21 +93,18 @@ class TopicAiSuggestViewModel @Inject constructor(
                     selectedSuggestionId = null,
                     errorMessage = null,
                     loadingSteps = listOf(
-                        AnalysisStep("수집 데이터 확인 중", StepStatus.Running, "수집된 데이터를 스캔하고 있어요"),
-                        AnalysisStep("패턴 분류 중", StepStatus.Pending),
-                        AnalysisStep("추천 주제 준비 중", StepStatus.Pending),
+                        AnalysisStep("수집 데이터 확인 중", StepStatus.Running),
+                        AnalysisStep("패턴 분류 대기", StepStatus.Pending),
+                        AnalysisStep("추천 주제 준비 대기", StepStatus.Pending),
                     ),
                 )
             }
 
             try {
-                // 첫 단계 진입 시 1초 딜레이
-                delay(1000)
-
-                // Step 1: 수집 데이터 확인
                 val items = withContext(ioDispatcher) {
                     dataRepository.observeItems().first()
                 }
+                delay(650)
                 if (items.isEmpty()) {
                     _uiState.update {
                         it.copy(
@@ -117,29 +114,30 @@ class TopicAiSuggestViewModel @Inject constructor(
                             selectedSuggestionId = null,
                             errorMessage = "수집된 데이터가 없습니다.",
                             loadingSteps = listOf(
-                                AnalysisStep("수집 데이터 확인 중", StepStatus.Failed, "수집된 데이터를 찾을 수 없어요"),
-                                AnalysisStep("패턴 분류 중", StepStatus.Pending),
-                                AnalysisStep("추천 주제 준비 중", StepStatus.Pending),
+                                AnalysisStep("수집 데이터 확인 실패", StepStatus.Failed),
+                                AnalysisStep("패턴 분류 대기", StepStatus.Pending),
+                                AnalysisStep("추천 주제 준비 대기", StepStatus.Pending),
                             ),
                         )
                     }
                     return@launch
+                }else{
+                    _uiState.update {
+                        it.copy(
+                            loadingSteps = listOf(
+                                AnalysisStep("수집 데이터 확인 완료", StepStatus.Success),
+                                AnalysisStep("패턴 분류 중", StepStatus.Running),
+                                AnalysisStep("추천 주제 준비 대기", StepStatus.Pending),
+                            ),
+                        )
+                    }
                 }
 
-                _uiState.update {
-                    it.copy(
-                        loadingSteps = listOf(
-                            AnalysisStep("수집 데이터 확인 중", StepStatus.Success),
-                            AnalysisStep("패턴 분류 중", StepStatus.Running, "유사한 데이터끼리 그룹화하고 있어요"),
-                            AnalysisStep("추천 주제 준비 중", StepStatus.Pending),
-                        ),
-                    )
-                }
 
-                // Step 2: 패턴 분류
                 val clusters = withContext(ioDispatcher) {
                     dataClusterer.cluster(items)
                 }
+                delay(650)
                 if (clusters.isEmpty()) {
                     _uiState.update {
                         it.copy(
@@ -149,35 +147,57 @@ class TopicAiSuggestViewModel @Inject constructor(
                             selectedSuggestionId = null,
                             errorMessage = "추천할 데이터 묶음을 찾지 못했습니다.",
                             loadingSteps = listOf(
-                                AnalysisStep("수집 데이터 확인 중", StepStatus.Success),
-                                AnalysisStep("패턴 분류 중", StepStatus.Failed, "데이터 묶음을 만들 수 없어요"),
-                                AnalysisStep("추천 주제 준비 중", StepStatus.Pending),
+                                AnalysisStep("수집 데이터 확인 완료", StepStatus.Success),
+                                AnalysisStep("패턴 분류 실패", StepStatus.Failed),
+                                AnalysisStep("추천 주제 준비 대기", StepStatus.Pending),
                             ),
                         )
                     }
                     return@launch
+                }else{
+                    _uiState.update {
+                        it.copy(
+                            loadingSteps = listOf(
+                                AnalysisStep("수집 데이터 확인 완료", StepStatus.Success),
+                                AnalysisStep("패턴 분류 완료", StepStatus.Success),
+                                AnalysisStep("추천 주제 준비 중", StepStatus.Running),
+                            ),
+                        )
+                    }
                 }
 
-                _uiState.update {
-                    it.copy(
-                        loadingSteps = listOf(
-                            AnalysisStep("수집 데이터 확인 중", StepStatus.Success),
-                            AnalysisStep("패턴 분류 중", StepStatus.Success),
-                            AnalysisStep("추천 주제 준비 중", StepStatus.Running, "AI가 주제 후보를 생성하고 있어요"),
-                        ),
-                    )
-                }
 
-                // Step 3: 추천 주제 준비
                 val refinedClusters = withContext(ioDispatcher) {
                     clusterTopicAgent.suggestTopics(clusters, items).getOrElse { clusters }
                 }
                 val suggestions = refinedClusters
                     .toTopicAiSuggestionUi()
                     .rankForQuery(normalizedQuery)
+                delay(650)
+                if (suggestions.isEmpty()){
+                    _uiState.update {
+                        it.copy(
+                            loadingSteps = listOf(
+                                AnalysisStep("수집 데이터 확인 완료", StepStatus.Success),
+                                AnalysisStep("패턴 분류 완료", StepStatus.Success),
+                                AnalysisStep("추천 주제 준비 실패", StepStatus.Failed),
+                            ),
+                        )
+                    }
+                    return@launch
+                }else{
+                    _uiState.update {
+                        it.copy(
+                            loadingSteps = listOf(
+                                AnalysisStep("수집 데이터 확인 완료", StepStatus.Success),
+                                AnalysisStep("패턴 분류 완료", StepStatus.Success),
+                                AnalysisStep("추천 주제 준비 완료", StepStatus.Success),
+                            ),
+                        )
+                    }
+                }
 
-                // 마지막 단계 완료 후 1초 딜레이
-                delay(1000)
+                delay(650)
 
                 _uiState.update {
                     it.copy(
@@ -189,6 +209,7 @@ class TopicAiSuggestViewModel @Inject constructor(
                         loadingSteps = emptyList(),
                     )
                 }
+
             } catch (e: Exception) {
                 val currentSteps = _uiState.value.loadingSteps
                 val failedIndex = currentSteps.indexOfFirst { it.status == StepStatus.Running }
@@ -242,15 +263,16 @@ class TopicAiSuggestViewModel @Inject constructor(
                     selectedSuggestionId = suggestion.id,
                     errorMessage = null,
                     creatingSteps = listOf(
-                        AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running, "추천 주제의 데이터를 검색하고 있어요"),
-                        AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Pending),
-                        AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
+                        AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running),
+                        AnalysisStep("텍스트와 이미지 분석 대기", StepStatus.Pending),
+                        AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
                     ),
                 )
             }
 
             try {
                 val itemIds = suggestion.itemIds.distinct()
+                delay(650)
                 if (itemIds.isEmpty()) {
                     _uiState.update {
                         it.copy(
@@ -258,19 +280,25 @@ class TopicAiSuggestViewModel @Inject constructor(
                             selectedSuggestionId = null,
                             errorMessage = "추천 주제에 연결할 데이터가 없습니다.",
                             creatingSteps = listOf(
-                                AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Failed, "연결할 데이터를 찾을 수 없어요"),
-                                AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Pending),
-                                AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
+                                AnalysisStep("선택한 데이터 불러오기 실패", StepStatus.Failed),
+                                AnalysisStep("텍스트와 이미지 분석 대기", StepStatus.Pending),
+                                AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
                             ),
                         )
                     }
                     return@launch
+                }else{
+                    _uiState.update {
+                        it.copy(
+                            creatingSteps = listOf(
+                                AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
+                                AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running),
+                                AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
+                            ),
+                        )
+                    }
                 }
 
-                // 첫 단계 진입 시 1초 딜레이
-                delay(1000)
-
-                // Step 1: 데이터 불러오기
                 val createdTopicId = withContext(ioDispatcher) {
                     dataRepository.addItemsToTopic(
                         title = suggestion.title,
@@ -278,28 +306,16 @@ class TopicAiSuggestViewModel @Inject constructor(
                         addedBy = "AI_CLUSTER"
                     )
                 }
-
-                _uiState.update {
-                    it.copy(
-                        creatingSteps = listOf(
-                            AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Success),
-                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running, "텍스트 패턴과 이미지 내용을 파악하고 있어요"),
-                            AnalysisStep("실행 초안 준비 중", StepStatus.Pending),
-                        ),
-                    )
-                }
-
-                // Step 2: 분석 실행
                 val analysisCreated = withContext(ioDispatcher) {
                     dataRepository.runTopicAnalysis(createdTopicId)
                 }
-
+                delay(650)
                 _uiState.update {
                     it.copy(
                         creatingSteps = listOf(
-                            AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Success),
-                            AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Success),
-                            AnalysisStep("실행 초안 준비 중", StepStatus.Running, "분석 결과로 실행 가능한 초안을 작성하고 있어요"),
+                            AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
+                            AnalysisStep("실행 초안 준비 중", StepStatus.Running),
                         ),
                     )
                 }
@@ -314,9 +330,17 @@ class TopicAiSuggestViewModel @Inject constructor(
                 if (!hasActions) {
                     throw IllegalStateException("Topic action 초안을 만들지 못했습니다.")
                 }
-
-                // 마지막 단계 완료 후 1초 딜레이
-                delay(1000)
+                delay(650)
+                _uiState.update {
+                    it.copy(
+                        creatingSteps = listOf(
+                            AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
+                            AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
+                            AnalysisStep("실행 초안 준비 성공", StepStatus.Success),
+                        ),
+                    )
+                }
+                delay(650)
 
                 _uiState.update {
                     it.copy(
