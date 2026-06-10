@@ -1,6 +1,11 @@
 package com.samsung.smartclipboard.presentation.main
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -32,6 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.samsung.smartclipboard.presentation.main.taskreview.ActionReviewScreen
 import com.samsung.smartclipboard.presentation.main.aitopicselection.TopicAiSuggestScreen
 import com.samsung.smartclipboard.presentation.AnalyzingScreen
@@ -55,7 +67,6 @@ fun MainScreen(
 
     MainScreenContent(
         uiState = uiState,
-        onNavigate = viewModel::navigate,
         onDataSelectModeChanged = viewModel::onDataSelectModeChanged,
         onOpenAnalysisSheet = viewModel::openAnalysisSheet,
         onDismissAnalysisSheet = viewModel::dismissAnalysisSheet,
@@ -64,18 +75,21 @@ fun MainScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 private fun MainScreenContent(
     uiState: MainUiState,
-    onNavigate: (Screen, Map<String, String>) -> Unit,
     onDataSelectModeChanged: (Boolean) -> Unit,
     onOpenAnalysisSheet: (Int, String) -> Unit,
     onDismissAnalysisSheet: () -> Unit,
     onSheetTopicNameChanged: (String) -> Unit,
-    onConfirmAnalysis: () -> Unit,
+    onConfirmAnalysis: () -> Map<String, String>,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val navController = rememberNavController()
+    val navigate: (Screen, Map<String, String>) -> Unit = { screen, data ->
+        navController.navigateTo(screen = screen, data = data)
+    }
 
     Scaffold(
         containerColor = AppColors.Surface,
@@ -86,65 +100,132 @@ private fun MainScreenContent(
                 .padding(padding)
                 .background(AppColors.Surface),
         ) {
-            Crossfade(
-                targetState = ScreenRenderState(
-                    screen = uiState.screen,
-                    navData = uiState.navData,
-                ),
-                animationSpec = tween(durationMillis = HomePortalTransition.MainScreenCrossfadeMillis),
-                label = "main_screen_crossfade",
-            ) { target ->
-                when (target.screen) {
-                    Screen.Home -> HomeScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
+            NavHost(
+                navController = navController,
+                startDestination = MainRoutes.routeFor(Screen.Home, emptyMap()),
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 280,
+                            easing = FastOutSlowInEasing,
+                        ),
+                    ) + slideInHorizontally(
+                        animationSpec = tween(
+                            durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
+                            easing = FastOutSlowInEasing,
+                        ),
+                        initialOffsetX = { it / 5 },
                     )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 220,
+                            easing = FastOutSlowInEasing,
+                        ),
+                    ) + slideOutHorizontally(
+                        animationSpec = tween(
+                            durationMillis = 280,
+                            easing = FastOutSlowInEasing,
+                        ),
+                        targetOffsetX = { -it / 8 },
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 260,
+                            easing = FastOutSlowInEasing,
+                        ),
+                    ) + slideInHorizontally(
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            easing = FastOutSlowInEasing,
+                        ),
+                        initialOffsetX = { -it / 8 },
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = FastOutSlowInEasing,
+                        ),
+                    ) + slideOutHorizontally(
+                        animationSpec = tween(
+                            durationMillis = 260,
+                            easing = FastOutSlowInEasing,
+                        ),
+                        targetOffsetX = { it / 5 },
+                    )
+                },
+            ) {
+                MainRoutes.destinations.forEach { destination ->
+                    composable(
+                        route = destination.routePattern,
+                        arguments = listOf(
+                            navArgument(MainRoutes.NavDataArg) {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                        ),
+                    ) { backStackEntry ->
+                        val navData = backStackEntry.navData()
+                        when (destination.screen) {
+                            Screen.Home -> HomeScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.Data -> DataScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                        onSelectModeChange = onDataSelectModeChanged,
-                        onOpenSheet = onOpenAnalysisSheet,
-                    )
+                            Screen.Data -> DataScreen(
+                                navigate = navigate,
+                                data = navData,
+                                onSelectModeChange = onDataSelectModeChanged,
+                                onOpenSheet = onOpenAnalysisSheet,
+                            )
 
-                    Screen.Tasks -> TasksScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                    )
+                            Screen.Tasks -> TasksScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.History -> HistoryScreen(
-                        navigate = onNavigate,
-                    )
+                            Screen.History -> HistoryScreen(
+                                navigate = navigate,
+                            )
 
-                    Screen.Storage -> StorageScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                    )
+                            Screen.Storage -> StorageScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.AiSuggest -> TopicAiSuggestScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                    )
+                            Screen.AiSuggest -> TopicAiSuggestScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.Analyzing -> AnalyzingScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                    )
+                            Screen.Analyzing -> AnalyzingScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.TopicDetail -> TopicSelectionScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                    )
+                            Screen.TopicDetail -> TopicSelectionScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.ActionReview -> ActionReviewScreen(
-                        navigate = onNavigate,
-                        data = target.navData,
-                    )
+                            Screen.ActionReview -> ActionReviewScreen(
+                                navigate = navigate,
+                                data = navData,
+                            )
 
-                    Screen.TopicDataSelect -> TopicDataSelectionScreen(
-                        topicTitle = target.navData["topic"].orEmpty(),
-                        navigate = onNavigate,
-                    )
+                            Screen.TopicDataSelect -> TopicDataSelectionScreen(
+                                topicTitle = navData["topic"].orEmpty(),
+                                navigate = navigate,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -189,7 +270,9 @@ private fun MainScreenContent(
                 GradientButton(
                     text = "분석",
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = onConfirmAnalysis,
+                    onClick = {
+                        navigate(Screen.Analyzing, onConfirmAnalysis())
+                    },
                 )
 
                 Button(
@@ -211,27 +294,46 @@ private fun MainScreenContent(
     }
 }
 
-private data class ScreenRenderState(
-    val screen: Screen,
-    val navData: Map<String, String>,
-)
-
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun MainScreenHomePreview() {
     MainScreenContent(
-        uiState = MainUiState(
-            screen = Screen.Analyzing,
-            navData = mapOf(
-                "selectedCount" to "3",
-                "topicName" to "회의 자료 정리",
-            ),
-        ),
-        onNavigate = { _, _ -> },
+        uiState = MainUiState(),
         onDataSelectModeChanged = {},
         onOpenAnalysisSheet = { _, _ -> },
         onDismissAnalysisSheet = {},
         onSheetTopicNameChanged = {},
-        onConfirmAnalysis = {},
+        onConfirmAnalysis = { emptyMap() },
     )
+}
+
+private fun NavHostController.navigateTo(
+    screen: Screen,
+    data: Map<String, String>,
+) {
+    val route = MainRoutes.routeFor(screen, data)
+    navigate(route) {
+        launchSingleTop = true
+        when (screen) {
+            Screen.Home -> {
+                popUpTo(MainRoutes.routeFor(Screen.Home, emptyMap())) {
+                    inclusive = data.isNotEmpty()
+                }
+            }
+
+            Screen.Data,
+            Screen.Tasks -> {
+                popUpTo(MainRoutes.routeFor(Screen.Home, emptyMap())) {
+                    saveState = true
+                }
+                restoreState = data.isEmpty()
+            }
+
+            else -> Unit
+        }
+    }
+}
+
+private fun NavBackStackEntry.navData(): Map<String, String> {
+    return MainRoutes.decodeNavData(arguments?.getString(MainRoutes.NavDataArg))
 }

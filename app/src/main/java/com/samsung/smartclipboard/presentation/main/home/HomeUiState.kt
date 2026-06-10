@@ -16,6 +16,8 @@ data class HomeUiState(
     // 데이터 패널
     val dataPanelMounted: Boolean = false,
     val dataPanelVisible: Boolean = false,
+    val dataPanelLoadContent: Boolean = false,
+    val dataPanelDragOffsetPx: Float? = null,
 
     // 포털 전환 애니메이션
     val portalAnimating: Boolean = false,

@@ -1,9 +1,6 @@
 package com.samsung.smartclipboard.presentation.main
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.samsung.smartclipboard.presentation.NavTab
-import com.samsung.smartclipboard.presentation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,28 +13,6 @@ class MainViewModel @Inject constructor() : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
-
-    fun navigate(target: Screen, data: Map<String, String> = emptyMap()) {
-        Log.d("MainViewModel", "navigate → screen: $target, navData: $data")
-        _uiState.update { current ->
-            current.copy(
-                screen = target,
-                navData = data,
-                activeTab = resolveActiveTab(
-                    target = target,
-                    currentTab = current.activeTab,
-                ),
-            )
-        }
-    }
-
-    fun onBottomTabSelected(tab: NavTab) {
-        when (tab) {
-            NavTab.Home -> navigate(Screen.Home)
-            NavTab.Data -> navigate(Screen.Data)
-            NavTab.Tasks -> navigate(Screen.Tasks)
-        }
-    }
 
     fun onDataSelectModeChanged(enabled: Boolean) {
         _uiState.update {
@@ -67,31 +42,21 @@ class MainViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    fun confirmAnalysis() {
-        _uiState.update { current ->
-            current.copy(
-                bottomSheetVisible = false,
-                dataSelectMode = false,
-                screen = Screen.Analyzing,
-                navData = mapOf(
-                    "selectedCount" to current.sheetCount.toString(),
-                    "topicName" to current.sheetTopicName,
-                ),
-                // 기존 로직과 동일하게 Analyzing 화면으로 가도 activeTab은 유지
-                activeTab = current.activeTab,
+    fun confirmAnalysis(): Map<String, String> {
+        val analysisData = _uiState.value.let { current ->
+            mapOf(
+                "selectedCount" to current.sheetCount.toString(),
+                "topicName" to current.sheetTopicName,
             )
         }
-    }
 
-    private fun resolveActiveTab(
-        target: Screen,
-        currentTab: NavTab,
-    ): NavTab {
-        return when (target) {
-            Screen.Home -> NavTab.Home
-            Screen.Data -> NavTab.Data
-            Screen.Tasks -> NavTab.Tasks
-            else -> currentTab
+        _uiState.update {
+            it.copy(
+                bottomSheetVisible = false,
+                dataSelectMode = false,
+            )
         }
+
+        return analysisData
     }
 }

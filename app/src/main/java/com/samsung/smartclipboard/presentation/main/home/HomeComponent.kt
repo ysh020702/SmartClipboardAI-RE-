@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -96,7 +97,6 @@ import kotlin.math.roundToInt
 
 internal object PanelDefaults {
     val EdgeShadowWidth = 8.dp
-    val OpenGestureStartPadding = 24.dp
     const val EdgeShadowAlpha = 0.12f
     const val CloseThresholdFraction = 0.18f
     const val OpenThresholdFraction = 0.82f
@@ -108,6 +108,16 @@ internal object PanelDefaults {
 // === 슬라이드 패널 공통 ===
 
 internal enum class SlideDirection { FromLeft, FromRight }
+
+private fun dragRangeFor(
+    direction: SlideDirection,
+    panelWidthPx: Float,
+): ClosedFloatingPointRange<Float> {
+    return when (direction) {
+        SlideDirection.FromLeft -> -panelWidthPx..0f
+        SlideDirection.FromRight -> 0f..panelWidthPx
+    }
+}
 
 @Composable
 internal fun SlidePanel(
@@ -143,12 +153,10 @@ internal fun SlidePanel(
                 Animatable(if (visible && openInstantly) 0f else initialOffset)
             }
 
-            // 외부 드래그 오프셋 실시간 반영 (FromLeft만 사용)
-            if (direction == SlideDirection.FromLeft) {
-                LaunchedEffect(externalDragOffsetPx, panelWidthPx) {
-                    externalDragOffsetPx?.let { dragOffset ->
-                        panelOffset.snapTo(dragOffset.coerceIn(-panelWidthPx, 0f))
-                    }
+            // 외부 드래그 오프셋 실시간 반영
+            LaunchedEffect(externalDragOffsetPx, panelWidthPx, direction) {
+                externalDragOffsetPx?.let { dragOffset ->
+                    panelOffset.snapTo(dragOffset.coerceIn(dragRangeFor(direction, panelWidthPx)))
                 }
             }
 
@@ -189,10 +197,7 @@ internal fun SlidePanel(
             }
 
             // 드래그 범위
-            val dragRange = when (direction) {
-                SlideDirection.FromLeft -> -panelWidthPx..0f
-                SlideDirection.FromRight -> 0f..panelWidthPx
-            }
+            val dragRange = dragRangeFor(direction, panelWidthPx)
 
             // 닫힘 임계값
             val closeThreshold = when (direction) {
@@ -248,7 +253,7 @@ internal fun SlidePanel(
 }
 
 @Composable
-private fun PanelEdgeShadow(
+private fun BoxScope.PanelEdgeShadow(
     direction: SlideDirection,
     alphaa: Float,
 ) {
@@ -264,6 +269,7 @@ private fun PanelEdgeShadow(
 
     Box(
         modifier = Modifier
+            .align(alignment)
             .fillMaxHeight()
             .width(PanelDefaults.EdgeShadowWidth)
             .graphicsLayer { this.alpha = alphaa }
@@ -272,6 +278,7 @@ private fun PanelEdgeShadow(
 
     Box(
         modifier = Modifier
+            .align(alignment)
             .fillMaxHeight()
             .width(1.dp)
             .graphicsLayer { this.alpha = alphaa }
@@ -661,11 +668,13 @@ internal fun HomeSettingsPanel(
 
 /**
  * 오른쪽에서 슬라이드 인되는 Data 패널.
- * 스와이프 완료 시에만 애니메이션으로 열리며, 패널이 완전히 열렸을 때만 DataScreen의 데이터 로딩이 수행됨.
+ * 드래그 중에는 패널 면만 추적하고, 열림 확정 후에만 DataScreen을 composition해 데이터 로딩을 시작함.
  */
 @Composable
 internal fun HomeDataPanel(
     visible: Boolean,
+    loadContent: Boolean,
+    externalDragOffsetPx: Float?,
     onDismiss: () -> Unit,
     onDismissAnimationFinished: () -> Unit,
     onNavigate: (Screen, Map<String, String>) -> Unit,
@@ -673,20 +682,22 @@ internal fun HomeDataPanel(
     SlidePanel(
         visible = visible,
         direction = SlideDirection.FromRight,
+        externalDragOffsetPx = externalDragOffsetPx,
         onDismiss = onDismiss,
         onDismissAnimationFinished = onDismissAnimationFinished,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            DataScreen(
-                navigate = { screen, navData ->
-                    onNavigate(screen, navData)
-                },
-                data = mapOf("from" to "homeDataPanel"),
-                deferLoading = !visible,
-                onSelectModeChange = { },
-                onOpenSheet = { _, _ -> },
-                onClose = onDismiss,
-            )
+            if (loadContent) {
+                DataScreen(
+                    navigate = { screen, navData ->
+                        onNavigate(screen, navData)
+                    },
+                    data = mapOf("from" to "homeDataPanel"),
+                    onSelectModeChange = { },
+                    onOpenSheet = { _, _ -> },
+                    onClose = onDismiss,
+                )
+            }
         }
     }
 }

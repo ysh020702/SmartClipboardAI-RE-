@@ -3,11 +3,14 @@ package com.samsung.smartclipboard.presentation.main.home
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -63,16 +66,47 @@ class HomeViewModel @Inject constructor() : ViewModel() {
 
     fun openDataPanel() {
         _uiState.update {
-            it.copy(dataPanelMounted = true, dataPanelVisible = true)
+            it.copy(
+                dataPanelMounted = true,
+                dataPanelVisible = true,
+                dataPanelLoadContent = true,
+                dataPanelDragOffsetPx = null,
+            )
         }
     }
 
     fun dismissDataPanel() {
-        _uiState.update { it.copy(dataPanelVisible = false) }
+        _uiState.update {
+            it.copy(
+                dataPanelVisible = false,
+                dataPanelDragOffsetPx = null,
+            )
+        }
     }
 
     fun onDataPanelDismissAnimationFinished() {
-        _uiState.update { it.copy(dataPanelMounted = false) }
+        _uiState.update {
+            it.copy(
+                dataPanelMounted = false,
+                dataPanelLoadContent = false,
+                dataPanelDragOffsetPx = null,
+            )
+        }
+    }
+
+    fun onDataDragStart(offset: Float) {
+        _uiState.update {
+            it.copy(
+                dataPanelMounted = true,
+                dataPanelVisible = true,
+                dataPanelLoadContent = false,
+                dataPanelDragOffsetPx = offset,
+            )
+        }
+    }
+
+    fun updateDataDragOffset(offset: Float?) {
+        _uiState.update { it.copy(dataPanelDragOffsetPx = offset) }
     }
 
     // === 포털 전환 ===
@@ -83,6 +117,13 @@ class HomeViewModel @Inject constructor() : ViewModel() {
 
     fun finishPortalAnimation() {
         _uiState.update { it.copy(portalAnimating = false) }
+    }
+
+    fun finishPortalAnimationAfterNavigation() {
+        viewModelScope.launch {
+            delay(HomePortalTransition.PostNavigateHoldMillis)
+            finishPortalAnimation()
+        }
     }
 
     fun updatePortalCardPosition(topLeft: Offset, size: IntSize) {

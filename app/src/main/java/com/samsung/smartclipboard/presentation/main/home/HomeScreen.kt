@@ -45,14 +45,16 @@ fun HomeScreen(
         onSettingsPanelDismissAnimationFinished = homeViewModel::onSettingsPanelDismissAnimationFinished,
         onSettingsDragStart = homeViewModel::onSettingsDragStart,
         onDragOffsetChange = homeViewModel::updateDragOffset,
+        onDataDragStart = homeViewModel::onDataDragStart,
+        onDataDragOffsetChange = homeViewModel::updateDataDragOffset,
         onDataPanelOpen = homeViewModel::openDataPanel,
         onDataPanelDismiss = homeViewModel::dismissDataPanel,
         onDataPanelDismissAnimationFinished = homeViewModel::onDataPanelDismissAnimationFinished,
         onPortalCardPositioned = homeViewModel::updatePortalCardPosition,
         onAiSuggestClick = homeViewModel::startPortalAnimation,
         onPortalFinished = {
-            homeViewModel.finishPortalAnimation()
             navigate(Screen.AiSuggest, HomePortalTransition.aiSuggestNavigationData())
+            homeViewModel.finishPortalAnimationAfterNavigation()
         },
         onManualTopicClick = {
             navigate(
@@ -75,6 +77,8 @@ private fun HomeScreenContent(
     onSettingsPanelDismissAnimationFinished: () -> Unit,        // 설정 패널 닫힘 애니메이션 완료 후 unmount → HomeViewModel.onSettingsPanelDismissAnimationFinished
     onSettingsDragStart: () -> Unit,                            // 설정 패널 드래그 시작 (패널 mounted/visible 즉시 설정) → HomeViewModel.onSettingsDragStart
     onDragOffsetChange: (Float?) -> Unit,                       // 드래그 오프셋 실시간 업데이트 (null이면 애니메이션 모드) → HomeViewModel.updateDragOffset
+    onDataDragStart: (Float) -> Unit,                           // 데이터 패널 드래그 시작 (로딩 없이 패널 mounted/visible 즉시 설정) → HomeViewModel.onDataDragStart
+    onDataDragOffsetChange: (Float?) -> Unit,                   // 데이터 패널 드래그 오프셋 실시간 업데이트 → HomeViewModel.updateDataDragOffset
     onDataPanelOpen: () -> Unit,                                // 데이터 패널 열기 → HomeViewModel.openDataPanel
     onDataPanelDismiss: () -> Unit,                              // 데이터 패널 닫기 요청 → HomeViewModel.dismissDataPanel
     onDataPanelDismissAnimationFinished: () -> Unit,            // 데이터 패널 닫힘 애니메이션 완료 후 unmount → HomeViewModel.onDataPanelDismissAnimationFinished
@@ -108,19 +112,21 @@ private fun HomeScreenContent(
                     var dataOpening = false
                     var canOpenDataFromDrag = false
 
-                    val openGestureStartPaddingPx = with(density) {
-                        PanelDefaults.OpenGestureStartPadding.toPx()
-                    }
-
                     detectHorizontalDragGestures(
                         onDragStart = { start ->
                             settingsOpeningOffsetPx = -panelWidthPx
                             settingsOpening = false
-                            canOpenSettingsFromDrag = start.x >= openGestureStartPaddingPx
+                            canOpenSettingsFromDrag = HomeSlideGesturePolicy.canStartSettingsOpen(
+                                startX = start.x,
+                                screenWidthPx = screenWidthPx,
+                            )
 
                             dataOpeningOffsetPx = panelWidthPx
                             dataOpening = false
-                            canOpenDataFromDrag = start.x <= screenWidthPx - openGestureStartPaddingPx
+                            canOpenDataFromDrag = HomeSlideGesturePolicy.canStartDataOpen(
+                                startX = start.x,
+                                screenWidthPx = screenWidthPx,
+                            )
                         },
                         onHorizontalDrag = { _, dragAmount ->
                             // Settings panel: 오른쪽 드래그 (dragAmount > 0) — 실시간 추적
@@ -133,11 +139,16 @@ private fun HomeScreenContent(
                                 onDragOffsetChange(settingsOpeningOffsetPx)
                             }
 
-                            // Data panel: 왼쪽 드래그 (dragAmount < 0) — 누적 이동량만 계산
+                            // Data panel: 왼쪽 드래그 (dragAmount < 0) — 실시간 추적
                             if (canOpenDataFromDrag && (dragAmount < 0f || dataOpening)) {
-                                dataOpening = true
                                 dataOpeningOffsetPx = (dataOpeningOffsetPx + dragAmount)
                                     .coerceIn(0f, panelWidthPx)
+                                if (!dataOpening) {
+                                    dataOpening = true
+                                    onDataDragStart(dataOpeningOffsetPx)
+                                } else {
+                                    onDataDragOffsetChange(dataOpeningOffsetPx)
+                                }
                             }
                         },
                         onDragEnd = {
@@ -152,8 +163,11 @@ private fun HomeScreenContent(
                             if (dataOpening) {
                                 val totalDrag = panelWidthPx - dataOpeningOffsetPx
                                 val shouldOpen = totalDrag > panelWidthPx * PanelDefaults.DataPanelOpenThresholdFraction
+                                onDataDragOffsetChange(null)
                                 if (shouldOpen) {
                                     onDataPanelOpen()
+                                } else {
+                                    onDataPanelDismiss()
                                 }
                             }
                         },
@@ -191,6 +205,8 @@ private fun HomeScreenContent(
             if (state.dataPanelMounted) {
                 HomeDataPanel(
                     visible = state.dataPanelVisible,
+                    loadContent = state.dataPanelLoadContent,
+                    externalDragOffsetPx = state.dataPanelDragOffsetPx,
                     onDismiss = onDataPanelDismiss,
                     onDismissAnimationFinished = onDataPanelDismissAnimationFinished,
                     onNavigate = onNavigate,
