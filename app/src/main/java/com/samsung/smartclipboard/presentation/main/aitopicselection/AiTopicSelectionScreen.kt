@@ -51,10 +51,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samsung.smartclipboard.presentation.AnalyzingScreen
+import com.samsung.smartclipboard.presentation.AnalysisStep
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.DarkGradient
 import com.samsung.smartclipboard.presentation.Pill
 import com.samsung.smartclipboard.presentation.Screen
+import com.samsung.smartclipboard.presentation.StepStatus
 import com.samsung.smartclipboard.presentation.main.home.HomePortalTransition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -114,7 +116,7 @@ fun TopicAiSuggestScreen(
         }
     }
 
-    if (uiState.isCreatingTopic) {
+    if (uiState.isCreatingTopic || uiState.creatingSteps.isNotEmpty()) {
         val selectedSuggestion = uiState.suggestions.firstOrNull { it.id == uiState.selectedSuggestionId }
         AnalyzingScreen(
             navigate = navigate,
@@ -123,12 +125,19 @@ fun TopicAiSuggestScreen(
                 "topicName" to (selectedSuggestion?.title ?: "주제"),
             ),
             autoNavigate = false,
+            steps = uiState.creatingSteps.ifEmpty { null },
+            onGoBack = { viewModel.resetCreatingSteps() },
         )
         return
     }
 
-    if (uiState.isLoading) {
-        AiSuggestLoading(query = query) { navigate(Screen.Home, emptyMap()) }
+    if (uiState.isLoading || uiState.loadingSteps.isNotEmpty()) {
+        AiSuggestLoading(
+            query = query,
+            steps = uiState.loadingSteps,
+            onClose = { navigate(Screen.Home, emptyMap()) },
+            onRetry = { viewModel.resetLoadingSteps() },
+        )
         return
     }
 
@@ -220,13 +229,22 @@ fun TopicAiSuggestScreen(
 }
 
 @Composable
-private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
+private fun AiSuggestLoading(
+    query: String,
+    steps: List<AnalysisStep>,
+    onClose: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    val useExternalSteps = steps.isNotEmpty()
     var stepIndex by remember { mutableStateOf(0) }
     var done by remember { mutableStateOf(false) }
 
-    val loadingSteps = HomePortalTransition.LoadingSteps
+    val defaultLoadingSteps = HomePortalTransition.LoadingSteps
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(useExternalSteps) {
+        if (useExternalSteps) return@LaunchedEffect
+        stepIndex = 0
+        done = false
         delay(850)
         stepIndex = 1
         delay(850)
@@ -234,6 +252,24 @@ private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
         delay(850)
         done = true
     }
+
+    val displaySteps: List<AnalysisStep> = if (useExternalSteps) {
+        steps
+    } else {
+        defaultLoadingSteps.mapIndexed { index, label ->
+            AnalysisStep(
+                label = label,
+                status = when {
+                    done || index < stepIndex -> StepStatus.Success
+                    index == stepIndex && !done -> StepStatus.Running
+                    else -> StepStatus.Pending
+                },
+            )
+        }
+    }
+
+    val hasFailure = displaySteps.any { it.status == StepStatus.Failed }
+    val allSuccess = displaySteps.all { it.status == StepStatus.Success }
 
     Column(
         modifier = Modifier
@@ -262,14 +298,31 @@ private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
                 .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF34D399)))
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(if (hasFailure) Color(0xFFEF4444) else Color(0xFF34D399))
+            )
             Spacer(Modifier.width(8.dp))
-            Text("AI 분석 진행 중", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (hasFailure) "분석 실패" else "AI 분석 진행 중",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+            )
         }
 
         Spacer(Modifier.height(32.dp))
-        Text("AI가 분석 중입니다", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
-        if (query.isNotBlank()) {
+        Text(
+            if (hasFailure) "분석에 실패했습니다" else "AI가 분석 중입니다",
+            color = Color.White,
+            fontSize = 23.sp,
+            fontWeight = FontWeight.ExtraBold,
+        )
+        if (hasFailure) {
+            Text("오류가 발생했습니다. 다시 시도해주세요.", color = Color(0xFFFCA5A5), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+        } else if (query.isNotBlank()) {
             Text("\"$query\"", color = Color(0xFFA5B4FC), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
         } else {
             Text("수집한 데이터에서 주제를 찾고 있어요", color = Color(0xFFA5B4FC), fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
@@ -277,9 +330,10 @@ private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
 
         Spacer(Modifier.height(42.dp))
         Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
-            loadingSteps.forEachIndexed { index, label ->
-                val completed = done || index < stepIndex
-                val active = index == stepIndex && !done
+            displaySteps.forEachIndexed { index, step ->
+                val isActive = step.status == StepStatus.Running
+                val isCompleted = step.status == StepStatus.Success
+                val isFailed = step.status == StepStatus.Failed
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -287,40 +341,107 @@ private fun AiSuggestLoading(query: String, onClose: () -> Unit) {
                             .clip(CircleShape)
                             .background(
                                 when {
-                                    completed -> Color(0xFF10B981)
-                                    active -> Color(0xFF93C5FD).copy(alpha = 0.22f)
+                                    isCompleted -> Color(0xFF10B981)
+                                    isFailed -> Color(0xFFEF4444)
+                                    isActive -> Color(0xFF93C5FD).copy(alpha = 0.22f)
                                     else -> Color.White.copy(alpha = 0.08f)
                                 },
                             )
                             .border(
-                                if (active) 1.5.dp else 0.dp,
-                                if (active) Color(0xFF93C5FD) else Color.Transparent,
-                                CircleShape,
+                                width = when {
+                                    isActive -> 1.5.dp
+                                    isFailed -> 1.5.dp
+                                    else -> 0.dp
+                                },
+                                color = when {
+                                    isActive -> Color(0xFF93C5FD)
+                                    isFailed -> Color(0xFFEF4444)
+                                    else -> Color.Transparent
+                                },
+                                shape = CircleShape,
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (completed) {
-                            Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                        } else if (active) {
-                            Box(Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF93C5FD)))
+                        when {
+                            isCompleted -> Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            isFailed -> Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            isActive -> Box(Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF93C5FD)))
                         }
                     }
                     Spacer(Modifier.width(12.dp))
-                    Text(
-                        label,
-                        color = Color.White.copy(alpha = if (index > stepIndex && !done) 0.34f else 1f),
-                        fontSize = 13.sp,
-                        fontWeight = if (active) FontWeight.ExtraBold else FontWeight.SemiBold
-                    )
+                    Column {
+                        Text(
+                            step.label,
+                            color = when {
+                                isFailed -> Color(0xFFFCA5A5)
+                                step.status == StepStatus.Pending -> Color.White.copy(alpha = 0.34f)
+                                else -> Color.White
+                            },
+                            fontSize = 13.sp,
+                            fontWeight = when {
+                                isActive -> FontWeight.ExtraBold
+                                isFailed -> FontWeight.ExtraBold
+                                else -> FontWeight.SemiBold
+                            },
+                        )
+                        if (step.detail != null && (isActive || isFailed)) {
+                            Text(
+                                step.detail,
+                                color = when {
+                                    isFailed -> Color(0xFFFCA5A5).copy(alpha = 0.60f)
+                                    else -> Color(0xFF93C5FD).copy(alpha = 0.55f)
+                                },
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
                 }
             }
         }
 
         Spacer(Modifier.weight(1f))
+
+        // 실패 시 이전으로 돌아가기 버튼
+        if (hasFailure) {
+            val failedLabel = displaySteps.firstOrNull { it.status == StepStatus.Failed }?.label ?: "이전 단계"
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.12f))
+                    .border(1.dp, Color.White.copy(alpha = 0.20f), RoundedCornerShape(16.dp))
+                    .clickable { onRetry() }
+                    .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = null,
+                        tint = Color(0xFF93C5FD),
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "\"$failedLabel\" 단계부터 다시 시도",
+                        color = Color(0xFF93C5FD),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
         Text(
-            if (done) "추천 주제를 표시하는 중..." else "AI 에이전트가 분석 중입니다...",
-            color = Color(0xFF93C5FD).copy(alpha = 0.50f),
-            fontSize = 10.sp
+            when {
+                hasFailure -> "오류가 발생했습니다. 다시 시도해주세요."
+                allSuccess -> "추천 주제를 표시하는 중..."
+                else -> "AI 에이전트가 분석 중입니다..."
+            },
+            color = if (hasFailure) Color(0xFFFCA5A5).copy(alpha = 0.70f) else Color(0xFF93C5FD).copy(alpha = 0.50f),
+            fontSize = 10.sp,
         )
     }
 }
