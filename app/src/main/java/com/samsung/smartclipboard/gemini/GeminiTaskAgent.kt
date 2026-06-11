@@ -5,7 +5,7 @@ import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.AgentResult
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.Topic
-import com.samsung.smartclipboard.domain.model.TopicActionType
+import com.samsung.smartclipboard.domain.model.TaskSelectionType
 import com.samsung.smartclipboard.gemini.GeminiUtils.contentPreview
 import com.samsung.smartclipboard.gemini.GeminiUtils.escapeJson
 import kotlinx.serialization.json.Json
@@ -54,7 +54,7 @@ class GeminiTaskAgent @Inject constructor(
             val actions = root["recommendedActions"]?.jsonArray?.mapNotNull { el ->
                 val obj = el.jsonObject
                 val typeStr = obj["type"]?.jsonPrimitive?.content ?: return@mapNotNull null
-                val type = runCatching { TopicActionType.valueOf(typeStr) }.getOrNull() ?: return@mapNotNull null
+                val type = runCatching { TaskSelectionType.valueOf(typeStr) }.getOrNull() ?: return@mapNotNull null
                 val title = obj["title"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val body = obj["body"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
 

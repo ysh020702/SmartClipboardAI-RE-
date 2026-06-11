@@ -3,7 +3,7 @@ package com.samsung.smartclipboard.gemini
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
-import com.samsung.smartclipboard.domain.model.TopicActionType
+import com.samsung.smartclipboard.domain.model.TaskSelectionType
 import com.samsung.smartclipboard.gemini.GeminiUtils.contentPreview
 import com.samsung.smartclipboard.gemini.GeminiUtils.escapeJson
 import com.samsung.smartclipboard.gemini.GeminiUtils.extractJsonObject
@@ -86,7 +86,7 @@ class GeminiRefineAgent(
         ${items.joinToString(", ") { it.item.id.toString() }}
 
         ## 사용 가능한 action type
-        ${TopicActionType.entries.joinToString(", ") { it.name }}
+        ${TaskSelectionType.entries.joinToString(", ") { it.name }}
 
         ## 출력 JSON schema
         {
@@ -156,7 +156,7 @@ class GeminiRefineAgent(
             val actionObj = element.jsonObject
 
             val typeRaw = actionObj["type"]?.jsonPrimitive?.content?.trim()?.uppercase() ?: return@mapNotNull null
-            val type = runCatching { TopicActionType.valueOf(typeRaw) }.getOrNull() ?: return@mapNotNull null
+            val type = runCatching { TaskSelectionType.valueOf(typeRaw) }.getOrNull() ?: return@mapNotNull null
 
             val confidence = actionObj["confidence"]?.jsonPrimitive?.content?.toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.5f
             val reason = actionObj["reason"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() } ?: "선택된 아이템을 기반으로 생성된 작업 후보입니다."
