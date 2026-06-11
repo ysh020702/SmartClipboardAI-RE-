@@ -1,0 +1,6 @@
+발견한 이슈: 
+1. HomeScreen에서, 화면전환(가로-세로) 하면 SettingScreen부터 나오는 문제
+2. DataScreen 오른쪽 스와이프 진입에서, 진입에 아무런 힌트가 없음. 
+2-1. 대안: 버튼을 Setting에 추가(기존안) or 홈 화면에 힌트 추가
+
+3.TopicAISuggestScreen(Loading -> results -> )TopicSelectionScreen (TopicDetail) (실행 초안 목록) 에서 뒤로가기를 눌러 TopicAISuggestScreen 으로 다시 돌아갈 경우, 다시 AI 클러스터링&주제찾기가 진행됨.
