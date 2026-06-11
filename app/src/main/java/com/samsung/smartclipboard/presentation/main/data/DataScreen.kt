@@ -375,7 +375,7 @@ private fun DataItemCard(
                         Pill(item.type.toFilterLabel(), Color.White, AppColors.Blue)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            item.mimeType ?: item.source.orEmpty(),
+                            item.content,
                             color = AppColors.Slate400,
                             fontSize = 9.sp,
                             maxLines = 1,
@@ -383,7 +383,7 @@ private fun DataItemCard(
                         )
                     }
                     Text(
-                        item.displayTitle(),
+                        item.effectiveContent.take(40)+"...",
                         color = AppColors.Slate800,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
