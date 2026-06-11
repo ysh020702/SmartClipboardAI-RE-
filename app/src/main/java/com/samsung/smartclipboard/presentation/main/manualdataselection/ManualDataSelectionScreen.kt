@@ -66,11 +66,11 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun TopicDataSelectionScreen(
+fun ManualDataSelectionScreen(
     topicTitle: String,
     navigate: (Screen, Map<String, String>) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TopicDataSelectionViewModel = hiltViewModel(),
+    viewModel: ManualDataSelectionViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val items = uiState.items
@@ -81,7 +81,7 @@ fun TopicDataSelectionScreen(
     LaunchedEffect(viewModel) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
-                is TopicDataSelectionEffect.NavigateToTopicDetail -> navigate(
+                is ManualDataSelectionEffect.NavigateToTopicDetail -> navigate(
                     Screen.TopicDetail,
                     mapOf(
                         "topicId" to effect.topicId.toString(),

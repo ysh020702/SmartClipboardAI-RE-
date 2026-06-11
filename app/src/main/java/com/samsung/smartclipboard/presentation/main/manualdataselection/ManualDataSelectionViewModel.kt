@@ -2,6 +2,7 @@ package com.samsung.smartclipboard.presentation.main.manualdataselection
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
 import com.samsung.smartclipboard.di.IoDispatcher
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.repository.DataRepository
@@ -24,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-data class TopicDataSelectionUiState(
+data class ManualDataSelectionUiState(
     val items: List<DataItem> = emptyList(),
     val selectedIds: Set<Long> = emptySet(),
     val isLoading: Boolean = true,
@@ -34,24 +35,25 @@ data class TopicDataSelectionUiState(
     val analysisSteps: List<AnalysisStep> = emptyList(),
 )
 
-sealed interface TopicDataSelectionEffect {
+sealed interface ManualDataSelectionEffect {
     data class NavigateToTopicDetail(
         val topicId: Long,
         val topicTitle: String,
-    ) : TopicDataSelectionEffect
+    ) : ManualDataSelectionEffect
 }
 
 @HiltViewModel
-class TopicDataSelectionViewModel @Inject constructor(
+class ManualDataSelectionViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val geminiFindData: GeminiFindData,
+    private val collectionPeriodPreferences: CollectionPeriodPreferences,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TopicDataSelectionUiState())
-    val uiState: StateFlow<TopicDataSelectionUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ManualDataSelectionUiState())
+    val uiState: StateFlow<ManualDataSelectionUiState> = _uiState.asStateFlow()
 
-    private val _effects = Channel<TopicDataSelectionEffect>(Channel.BUFFERED)
+    private val _effects = Channel<ManualDataSelectionEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
     init {
@@ -60,19 +62,22 @@ class TopicDataSelectionViewModel @Inject constructor(
 
     private fun observeDataItems() {
         viewModelScope.launch {
-            dataRepository.observeItems()
-                .catch { throwable ->
-                    throwable.printStackTrace()
-                }
-                .collectLatest { items ->
-                    _uiState.update { state ->
-                        val validIds = items.map { it.id }.toSet()
-                        state.copy(
-                            items = items,
-                            selectedIds = state.selectedIds.intersect(validIds),
-                            isLoading = false,
-                        )
-                    }
+            collectionPeriodPreferences.collectionPeriod
+                .collectLatest { period ->
+                    dataRepository.observeItemsInPeriod(period.startDateMs, period.endDateMs)
+                        .catch { throwable ->
+                            throwable.printStackTrace()
+                        }
+                        .collectLatest { items ->
+                            _uiState.update { state ->
+                                val validIds = items.map { it.id }.toSet()
+                                state.copy(
+                                    items = items,
+                                    selectedIds = state.selectedIds.intersect(validIds),
+                                    isLoading = false,
+                                )
+                            }
+                        }
                 }
         }
     }
@@ -230,7 +235,7 @@ class TopicDataSelectionViewModel @Inject constructor(
                 }
 
                 _effects.send(
-                    TopicDataSelectionEffect.NavigateToTopicDetail(
+                    ManualDataSelectionEffect.NavigateToTopicDetail(
                         topicId = createdTopicId,
                         topicTitle = topicTitle,
                     )
