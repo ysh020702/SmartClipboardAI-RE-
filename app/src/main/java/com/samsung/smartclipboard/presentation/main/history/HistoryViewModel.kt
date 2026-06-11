@@ -10,9 +10,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.domain.model.Topic
-import com.samsung.smartclipboard.domain.model.TopicAction
-import com.samsung.smartclipboard.domain.model.TopicActionStatus
-import com.samsung.smartclipboard.domain.model.TopicActionType
+import com.samsung.smartclipboard.domain.model.TaskSelection
+import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
+import com.samsung.smartclipboard.domain.model.TaskSelectionType
 import com.samsung.smartclipboard.domain.model.TopicAnalysis
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import com.samsung.smartclipboard.presentation.AppColors
@@ -66,19 +66,19 @@ private data class ActionTypeUi(
     val color: Color,
 )
 
-private fun TopicActionType.toActionTypeUi(): ActionTypeUi = when (this) {
-    TopicActionType.SUMMARY -> ActionTypeUi("note", "요약 노트", Icons.Default.Description, AppColors.Blue)
-    TopicActionType.CALENDAR -> ActionTypeUi("calendar", "캘린더", Icons.Default.CalendarMonth, Color(0xFF2563EB))
-    TopicActionType.REMINDER -> ActionTypeUi("reminder", "리마인더", Icons.Default.Notifications, AppColors.BlueDeep)
-    TopicActionType.SHARE_DRAFT -> ActionTypeUi("share", "공유", Icons.Default.Share, AppColors.Cyan)
-    TopicActionType.TODO -> ActionTypeUi("note", "할 일", Icons.Default.Description, AppColors.Green)
+private fun TaskSelectionType.toActionTypeUi(): ActionTypeUi = when (this) {
+    TaskSelectionType.SUMMARY -> ActionTypeUi("note", "요약 노트", Icons.Default.Description, AppColors.Blue)
+    TaskSelectionType.CALENDAR -> ActionTypeUi("calendar", "캘린더", Icons.Default.CalendarMonth, Color(0xFF2563EB))
+    TaskSelectionType.REMINDER -> ActionTypeUi("reminder", "리마인더", Icons.Default.Notifications, AppColors.BlueDeep)
+    TaskSelectionType.SHARE_DRAFT -> ActionTypeUi("share", "공유", Icons.Default.Share, AppColors.Cyan)
+    TaskSelectionType.TODO -> ActionTypeUi("note", "할 일", Icons.Default.Description, AppColors.Green)
 }
 
-private fun TopicActionStatus.toDisplayLabel(): String = when (this) {
-    TopicActionStatus.DRAFT -> "초안"
-    TopicActionStatus.EDITED -> "수정됨"
-    TopicActionStatus.EXECUTED -> "실행됨"
-    TopicActionStatus.DISMISSED -> "제외됨"
+private fun TaskSelectionStatus.toDisplayLabel(): String = when (this) {
+    TaskSelectionStatus.DRAFT -> "초안"
+    TaskSelectionStatus.EDITED -> "수정됨"
+    TaskSelectionStatus.EXECUTED -> "실행됨"
+    TaskSelectionStatus.DISMISSED -> "제외됨"
 }
 
 private fun formatTimestamp(timestamp: Long): String {
@@ -126,7 +126,7 @@ class HistoryViewModel @Inject constructor(
 
     private fun buildHistoryUi(
         topics: List<Topic>,
-        actions: List<TopicAction>,
+        actions: List<TaskSelection>,
         analysis: List<TopicAnalysis>,
     ): HistoryUiState {
         val actionsByTopic = actions.groupBy { it.topicId }
