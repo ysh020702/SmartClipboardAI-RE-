@@ -2,7 +2,7 @@ package com.samsung.smartclipboard.data.tool
 
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.RequiredInput
-import com.samsung.smartclipboard.domain.model.TopicActionType
+import com.samsung.smartclipboard.domain.model.TaskSelectionType
 import com.samsung.smartclipboard.domain.tool.ToolRegistry
 import com.samsung.smartclipboard.domain.tool.ToolRouteResult
 import com.samsung.smartclipboard.domain.tool.ToolRouter
@@ -70,11 +70,11 @@ class ToolRouterImpl(
             if (toolRegistry.getTool(tn) != null) return tn
         }
         return when (action.type) {
-            TopicActionType.CALENDAR -> "insert_calendar_event"
-            TopicActionType.REMINDER -> "set_reminder"
-            TopicActionType.SUMMARY -> "save_note_share"
-            TopicActionType.TODO -> "save_note_share"
-            TopicActionType.SHARE_DRAFT -> "share_text"
+            TaskSelectionType.CALENDAR -> "insert_calendar_event"
+            TaskSelectionType.REMINDER -> "set_reminder"
+            TaskSelectionType.SUMMARY -> "save_note_share"
+            TaskSelectionType.TODO -> "save_note_share"
+            TaskSelectionType.SHARE_DRAFT -> "share_text"
         }
     }
 
