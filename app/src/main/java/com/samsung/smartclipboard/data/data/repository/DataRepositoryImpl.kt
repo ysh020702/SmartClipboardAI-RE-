@@ -14,9 +14,9 @@ import com.samsung.smartclipboard.database.entity.TopicItemCrossRefEntity
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
 import com.samsung.smartclipboard.domain.model.Topic
-import com.samsung.smartclipboard.domain.model.TopicAction
-import com.samsung.smartclipboard.domain.model.TopicActionStatus
-import com.samsung.smartclipboard.domain.model.TopicActionType
+import com.samsung.smartclipboard.domain.model.TaskSelection
+import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
+import com.samsung.smartclipboard.domain.model.TaskSelectionType
 import com.samsung.smartclipboard.domain.model.TopicAnalysis
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import com.samsung.smartclipboard.gemini.GeminiPurposeAgent
@@ -57,7 +57,7 @@ class DataRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun observeTopicActions(topicId: Long): Flow<List<TopicAction>> {
+    override fun observeTopicActions(topicId: Long): Flow<List<TaskSelection>> {
         return topicDao.observeActionsForTopic(topicId).map { entities ->
             entities.map { it.toDomain() }
         }
@@ -166,10 +166,6 @@ class DataRepositoryImpl @Inject constructor(
         dataItemDao.deleteById(id)
     }
 
-    override suspend fun deleteAllItems() {
-        dataItemDao.clearAll()
-    }
-
     override suspend fun clearAll() {
         dataItemDao.clearAll()
     }
@@ -239,7 +235,7 @@ class DataRepositoryImpl @Inject constructor(
                     type = draft.type.name,
                     title = draft.title,
                     body = draft.body,
-                    status = TopicActionStatus.DRAFT.name,
+                    status = TaskSelectionStatus.DRAFT.name,
                     editablePayload = draft.payload,
                     createdAt = now,
                     updatedAt = now
@@ -264,12 +260,12 @@ class DataRepositoryImpl @Inject constructor(
             actionId = actionId,
             title = title,
             body = body,
-            status = TopicActionStatus.EDITED.name,
+            status = TaskSelectionStatus.EDITED.name,
             updatedAt = System.currentTimeMillis()
         )
     }
 
-    override suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus) {
+    override suspend fun updateActionStatus(actionId: Long, status: TaskSelectionStatus) {
         topicDao.updateActionStatus(
             actionId = actionId,
             status = status.name,
@@ -304,7 +300,7 @@ class DataRepositoryImpl @Inject constructor(
         return dataItemDao.getItemsByIds(ids).map { it.toDomain() }
     }
 
-    override fun observeAllTopicActions(): Flow<List<TopicAction>> {
+    override fun observeAllTopicActions(): Flow<List<TaskSelection>> {
         return topicDao.observeAllActions().map { entities ->
             entities.map { it.toDomain() }
         }
@@ -316,7 +312,7 @@ class DataRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getActionById(actionId: Long): TopicAction? {
+    override suspend fun getActionById(actionId: Long): TaskSelection? {
         return topicDao.getActionById(actionId)?.toDomain()
     }
 
@@ -331,15 +327,20 @@ class DataRepositoryImpl @Inject constructor(
         topicIds.forEach { id -> deleteTopicById(id) }
     }
 
-    override fun observeItemsInRange(startTime: Long?, endTime: Long?): Flow<List<DataItem>> {
+    override fun observeItemsInPeriod(startMs: Long?, endMs: Long?): Flow<List<DataItem>> {
         val flow = when {
-            startTime != null && endTime != null -> dataItemDao.observeBetweenTime(startTime, endTime)
-            startTime != null -> dataItemDao.observeFromTime(startTime)
-            endTime != null -> dataItemDao.observeUntilTime(endTime)
+            startMs != null && endMs != null -> dataItemDao.observeAllInRange(startMs, endMs)
+            startMs != null -> dataItemDao.observeAllFromStart(startMs)
+            endMs != null -> dataItemDao.observeAllUntilEnd(endMs)
             else -> dataItemDao.observeAll()
         }
-        return flow.map { entities ->
-            entities.map { it.toDomain() }
+        return flow.map { entities -> entities.map { it.toDomain() } }
+    }
+
+    override suspend fun getItemCount(startMs: Long?, endMs: Long?): Int {
+        return when {
+            startMs != null && endMs != null -> dataItemDao.countInRange(startMs, endMs)
+            else -> dataItemDao.countAll()
         }
     }
 
@@ -407,15 +408,15 @@ class DataRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun TopicActionEntity.toDomain(): TopicAction {
-        return TopicAction(
+    private fun TopicActionEntity.toDomain(): TaskSelection {
+        return TaskSelection(
             id = id,
             topicId = topicId,
             analysisResultId = analysisResultId,
-            type = runCatching { TopicActionType.valueOf(type) }.getOrDefault(TopicActionType.TODO),
+            type = runCatching { TaskSelectionType.valueOf(type) }.getOrDefault(TaskSelectionType.TODO),
             title = title,
             body = body,
-            status = runCatching { TopicActionStatus.valueOf(status) }.getOrDefault(TopicActionStatus.DRAFT),
+            status = runCatching { TaskSelectionStatus.valueOf(status) }.getOrDefault(TaskSelectionStatus.DRAFT),
             editablePayload = editablePayload,
             createdAt = createdAt,
             updatedAt = updatedAt
