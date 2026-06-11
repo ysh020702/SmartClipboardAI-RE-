@@ -46,6 +46,7 @@ interface DataRepository {
 
     /** 지정된 ID의 DataItem을 DB에서 삭제한다 */
     suspend fun deleteItem(id: Long)
+    suspend fun deleteAllItems()
 
     /** 모든 DataItem을 DB에서 삭제한다 */
     suspend fun clearAll()
@@ -82,4 +83,7 @@ interface DataRepository {
 
     /** 여러 토픽을 한 번에 삭제한다 */
     suspend fun deleteTopicsByIds(topicIds: List<Long>)
+
+    /** 지정된 기간 내의 DataItem을 Flow로 관찰하여 반환한다 */
+    fun observeItemsInRange(startTime: Long?, endTime: Long?): Flow<List<DataItem>>
 }
