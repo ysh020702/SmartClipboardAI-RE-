@@ -14,7 +14,11 @@ data class DataItem(
     /** purpose의 키워드 단위 추출 (콤마 구분), 유사도 분석 및 클러스터링에 사용 */
     val purposeKeyword: String? = null
 ) {
-    /** type이 TEXT면 content를, 아니면 extractedContent(없으면 content fallback)를 반환 */
+    /** 화면과 AI 입력에 사용할 대표 텍스트를 반환한다. 링크는 OG 설명을 우선 사용한다. */
     val effectiveContent: String
-        get() = if (type == DataItemType.TEXT) content else (extractedContent ?: content)
+        get() = when (type) {
+            DataItemType.TEXT -> content
+            DataItemType.LINK -> LinkMetadataCodec.previewText(extractedContent) ?: extractedContent ?: content
+            else -> extractedContent ?: content
+        }
 }

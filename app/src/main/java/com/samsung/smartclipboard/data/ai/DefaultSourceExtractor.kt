@@ -9,6 +9,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+import com.samsung.smartclipboard.domain.model.LinkMetadata
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -58,7 +59,7 @@ class DefaultSourceExtractor @Inject constructor(
         return InputImage.fromBitmap(croppedBitmap, 0)
     }
 
-    suspend fun extractFromUrl(url: String): String {
+    suspend fun extractFromUrl(url: String): LinkMetadata {
         val correctionUrl = url.replace("://blog.naver.com","://m.blog.naver.com")
         val client = OkHttpClient()
 
@@ -78,11 +79,48 @@ class DefaultSourceExtractor @Inject constructor(
                 }
         }
 
+        val document = Jsoup.parse(html, correctionUrl)
         val article = Readability4J(
             correctionUrl,
             html
         ).parse()
 
-        return article.textContent.toString()
+        val description = document.metaContent("og:description")
+            ?: document.metaContent("description")
+            ?: document.metaContent("twitter:description")
+
+        val textContent = article.textContent
+            .toString()
+            .trim()
+            .takeIf { it.isNotBlank() && it != "null" }
+
+        return LinkMetadata(
+            title = document.metaContent("og:title")
+                ?: document.metaContent("twitter:title")
+                ?: document.title().takeIf { it.isNotBlank() },
+            description = description,
+            imageUrl = document.metaContent("og:image")?.toAbsoluteUrl(document)
+                ?: document.metaContent("twitter:image")?.toAbsoluteUrl(document),
+            textContent = listOfNotNull(description, textContent)
+                .distinct()
+                .joinToString("\n\n")
+                .takeIf { it.isNotBlank() },
+        )
+    }
+
+    private fun org.jsoup.nodes.Document.metaContent(key: String): String? {
+        val propertyValue = selectFirst("meta[property=\"$key\"]")?.attr("content")
+        val nameValue = selectFirst("meta[name=\"$key\"]")?.attr("content")
+        return (propertyValue ?: nameValue)
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    private fun String.toAbsoluteUrl(document: org.jsoup.nodes.Document): String {
+        return runCatching {
+            document.baseUri().let { base ->
+                java.net.URI(base).resolve(this).toString()
+            }
+        }.getOrDefault(this)
     }
 }

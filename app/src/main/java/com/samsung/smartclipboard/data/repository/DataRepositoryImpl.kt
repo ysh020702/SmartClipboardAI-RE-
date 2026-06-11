@@ -13,6 +13,7 @@ import com.samsung.smartclipboard.database.entity.TopicEntity
 import com.samsung.smartclipboard.database.entity.TopicItemCrossRefEntity
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
+import com.samsung.smartclipboard.domain.model.LinkMetadataCodec
 import com.samsung.smartclipboard.domain.model.Topic
 import com.samsung.smartclipboard.domain.model.TaskSelection
 import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
@@ -84,16 +85,15 @@ class DataRepositoryImpl @Inject constructor(
         )
         val id = dataItemDao.insert(entity)
 
-        try {
-            val extracted = sourceExtractor.extractFromUrl(url)
-            if (extracted.isNotBlank()) {
-                dataItemDao.updateExtractedContent(id, extracted)
-            }
-        } catch (e: Exception) {
-            Log.w("DataRepository", "URL 내용 추출 실패: $url", e)
-        }
+        enrichLinkMetadata(id = id, url = url, fallbackTitle = title)
 
         analyzePurposeForItem(id)
+    }
+
+    override suspend fun enrichLinkMetadata(itemId: Long): Boolean {
+        val item = dataItemDao.getItemsByIds(listOf(itemId)).firstOrNull()?.toDomain() ?: return false
+        if (item.type != DataItemType.LINK) return false
+        return enrichLinkMetadata(id = item.id, url = item.content, fallbackTitle = item.title)
     }
 
     override suspend fun addMedia(uri: String, mimeType: String?, source: String?) {
@@ -366,6 +366,22 @@ class DataRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Log.w("DataRepository", "Purpose 분석 중 예외: id=$id", e)
+        }
+    }
+
+    private suspend fun enrichLinkMetadata(id: Long, url: String, fallbackTitle: String?): Boolean {
+        return try {
+            val metadata = sourceExtractor.extractFromUrl(url)
+            val encoded = LinkMetadataCodec.encode(metadata) ?: return false
+            dataItemDao.updateLinkMetadata(
+                id = id,
+                title = metadata.title ?: fallbackTitle,
+                extractedContent = encoded,
+            )
+            true
+        } catch (e: Exception) {
+            Log.w("DataRepository", "URL 메타데이터 추출 실패: $url", e)
+            false
         }
     }
 

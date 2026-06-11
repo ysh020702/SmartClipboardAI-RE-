@@ -2,6 +2,7 @@ package com.samsung.smartclipboard.gemini
 
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
+import com.samsung.smartclipboard.domain.model.LinkMetadataCodec
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -16,6 +17,10 @@ object GeminiUtils {
             DataItemType.FILE -> {
                 listOfNotNull(item.title, item.source, item.mimeType)
                     .joinToString(" / ")
+                    .take(length)
+            }
+            DataItemType.LINK -> {
+                (LinkMetadataCodec.previewText(item.extractedContent) ?: item.effectiveContent)
                     .take(length)
             }
             else -> item.effectiveContent.take(length)
