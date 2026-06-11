@@ -35,4 +35,13 @@ interface DataItemDao {
 
     @Query("DELETE FROM data_items")
     suspend fun clearAll()
+
+    @Query("SELECT * FROM data_items WHERE createdAt >= :startTime ORDER BY createdAt DESC")
+    fun observeFromTime(startTime: Long): Flow<List<DataItemEntity>>
+
+    @Query("SELECT * FROM data_items WHERE createdAt <= :endTime ORDER BY createdAt DESC")
+    fun observeUntilTime(endTime: Long): Flow<List<DataItemEntity>>
+
+    @Query("SELECT * FROM data_items WHERE createdAt >= :startTime AND createdAt <= :endTime ORDER BY createdAt DESC")
+    fun observeBetweenTime(startTime: Long, endTime: Long): Flow<List<DataItemEntity>>
 }
