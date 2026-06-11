@@ -1,8 +1,8 @@
 package com.samsung.smartclipboard.domain.repository
 
 import com.samsung.smartclipboard.domain.model.DataItem
-import com.samsung.smartclipboard.domain.model.TopicAction
-import com.samsung.smartclipboard.domain.model.TopicActionStatus
+import com.samsung.smartclipboard.domain.model.TaskSelection
+import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
 import com.samsung.smartclipboard.domain.model.Topic
 import com.samsung.smartclipboard.domain.model.TopicAnalysis
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +21,7 @@ interface DataRepository {
     fun observeTopicAnalysis(topicId: Long): Flow<List<TopicAnalysis>>
 
     /** 특정 Topic의 액션 초안들을 Flow로 관찰하여 반환한다 */
-    fun observeTopicActions(topicId: Long): Flow<List<TopicAction>>
+    fun observeTopicActions(topicId: Long): Flow<List<TaskSelection>>
 
     /** 텍스트 DataItem을 DB에 저장하고 purpose 분석을 수행한다 */
     suspend fun addText(text: String, source: String? = null)
@@ -46,7 +46,6 @@ interface DataRepository {
 
     /** 지정된 ID의 DataItem을 DB에서 삭제한다 */
     suspend fun deleteItem(id: Long)
-    suspend fun deleteAllItems()
 
     /** 모든 DataItem을 DB에서 삭제한다 */
     suspend fun clearAll()
@@ -67,16 +66,16 @@ interface DataRepository {
     suspend fun getItemsByIds(ids: List<Long>): List<DataItem>
 
     /** TopicAction의 상태를 지정된 status로 업데이트한다 */
-    suspend fun updateActionStatus(actionId: Long, status: TopicActionStatus)
+    suspend fun updateActionStatus(actionId: Long, status: TaskSelectionStatus)
 
     /** 모든 토픽의 액션을 Flow로 관찰하여 반환한다 (히스토리 화면용) */
-    fun observeAllTopicActions(): Flow<List<TopicAction>>
+    fun observeAllTopicActions(): Flow<List<TaskSelection>>
 
     /** 모든 토픽의 분석 결과를 Flow로 관찰하여 반환한다 (히스토리 화면용) */
     fun observeAllTopicAnalysis(): Flow<List<TopicAnalysis>>
 
     /** 지정된 ID의 TopicAction을 반환한다 */
-    suspend fun getActionById(actionId: Long): TopicAction?
+    suspend fun getActionById(actionId: Long): TaskSelection?
 
     /** 지정된 ID의 토픽과 관련된 모든 데이터(액션, 분석, cross-ref)를 삭제한다 */
     suspend fun deleteTopicById(topicId: Long)
@@ -84,6 +83,9 @@ interface DataRepository {
     /** 여러 토픽을 한 번에 삭제한다 */
     suspend fun deleteTopicsByIds(topicIds: List<Long>)
 
-    /** 지정된 기간 내의 DataItem을 Flow로 관찰하여 반환한다 */
-    fun observeItemsInRange(startTime: Long?, endTime: Long?): Flow<List<DataItem>>
+    /** 지정된 기간 내의 DataItem을 Flow로 관찰하여 반환한다. startMs가 null이면 처음부터, endMs가 null이면 현재까지 */
+    fun observeItemsInPeriod(startMs: Long?, endMs: Long?): Flow<List<DataItem>>
+
+    /** 지정된 기간 내의 DataItem 개수를 반환한다. startMs가 null이면 처음부터, endMs가 null이면 현재까지 */
+    suspend fun getItemCount(startMs: Long?, endMs: Long?): Int
 }
