@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.MediaStore
-import com.samsung.smartclipboard.data.source.period.CollectionPeriodManager
 import com.samsung.smartclipboard.di.IoDispatcher
 import com.samsung.smartclipboard.domain.model.DataItemType
 import com.samsung.smartclipboard.domain.repository.DataRepository
@@ -22,7 +21,6 @@ import javax.inject.Singleton
 class ScreenshotImportHandler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dataRepository: DataRepository,
-    private val collectionPeriodManager: CollectionPeriodManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
 
@@ -38,7 +36,7 @@ class ScreenshotImportHandler @Inject constructor(
                     )
                 }
 
-                val allItems = fetchRecentScreenshot( limit = 500 )  //500개의 이미지 중 스크린샷만 가져옵니다.
+                val allItems = fetchRecentScreenshot( limit = 10 )  //500개의 이미지 중 스크린샷만 가져옵니다.
                 if (allItems.isEmpty()) {
                     return@withContext MediaImportResult(
                         isSuccess = false,
@@ -48,12 +46,7 @@ class ScreenshotImportHandler @Inject constructor(
                     )
                 }
 
-                // 수집 기간 필터링 적용
-                val periodFilteredItems = allItems.filter { item ->
-                    collectionPeriodManager.isWithinPeriod(item.createdAt)
-                }
-
-                val screenshots = periodFilteredItems.filter { it.isScreenshot }
+                val screenshots = allItems.filter { it.isScreenshot }
                 if (screenshots.isEmpty()) {
                     return@withContext MediaImportResult(
                         isSuccess = true,
