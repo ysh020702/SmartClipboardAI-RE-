@@ -117,10 +117,10 @@ internal fun resolveTopicAiSuggestContent(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun TopicAiSuggestScreen(
+fun AiTopicSelectionScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
     data: Map<String, String>,
-    viewModel: TopicAiSuggestViewModel = hiltViewModel(),
+    viewModel: AiTopicSelectionViewModel = hiltViewModel(),
 ) {
     val skipLoading = data["skipLoading"] == "true"
     val query = data["query"].orEmpty()

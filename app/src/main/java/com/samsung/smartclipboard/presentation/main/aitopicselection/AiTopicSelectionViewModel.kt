@@ -2,6 +2,7 @@ package com.samsung.smartclipboard.presentation.main.aitopicselection
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
 import com.samsung.smartclipboard.di.IoDispatcher
 import com.samsung.smartclipboard.domain.model.DataCluster
 import com.samsung.smartclipboard.domain.repository.DataRepository
@@ -66,10 +67,11 @@ sealed interface TopicAiSuggestEffect {
 }
 
 @HiltViewModel
-class TopicAiSuggestViewModel @Inject constructor(
+class AiTopicSelectionViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val dataClusterer: DataClusterer,
     private val clusterTopicAgent: GeminiClusterTopicAgent,
+    private val collectionPeriodPreferences: CollectionPeriodPreferences,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -101,8 +103,9 @@ class TopicAiSuggestViewModel @Inject constructor(
             }
 
             try {
+                val period = collectionPeriodPreferences.collectionPeriod.first()
                 val items = withContext(ioDispatcher) {
-                    dataRepository.observeItems().first()
+                    dataRepository.observeItemsInPeriod(period.startDateMs, period.endDateMs).first()
                 }
                 delay(650)
                 if (items.isEmpty()) {
