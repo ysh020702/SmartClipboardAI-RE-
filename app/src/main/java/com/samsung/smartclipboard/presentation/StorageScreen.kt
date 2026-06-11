@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.samsung.smartclipboard.data.source.local.CollectionPeriod
+import com.samsung.smartclipboard.data.source.CollectionPeriod
 import com.samsung.smartclipboard.presentation.main.storage.StorageViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar

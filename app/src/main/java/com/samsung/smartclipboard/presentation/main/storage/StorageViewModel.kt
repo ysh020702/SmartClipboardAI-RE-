@@ -2,8 +2,8 @@ package com.samsung.smartclipboard.presentation.main.storage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samsung.smartclipboard.data.source.local.CollectionPeriod
-import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
+import com.samsung.smartclipboard.data.source.CollectionPeriod
+import com.samsung.smartclipboard.data.source.CollectionPeriodPreferences
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

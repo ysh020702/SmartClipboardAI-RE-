@@ -7,7 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
+import com.samsung.smartclipboard.data.source.CollectionPeriodPreferences
 import com.samsung.smartclipboard.presentation.SmartClipboardTheme
 import com.samsung.smartclipboard.presentation.main.permission.MediaPermissionHelper
 import com.samsung.smartclipboard.presentation.main.permission.OnboardingDateScreen

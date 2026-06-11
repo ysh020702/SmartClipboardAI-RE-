@@ -1,4 +1,4 @@
-package com.samsung.smartclipboard.data.source.media
+package com.samsung.smartclipboard.data.source.screenshot
 
 import android.Manifest
 import android.content.ContentUris

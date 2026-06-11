@@ -2,7 +2,7 @@ package com.samsung.smartclipboard.presentation.main.aitopicselection
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
+import com.samsung.smartclipboard.data.source.CollectionPeriodPreferences
 import com.samsung.smartclipboard.di.IoDispatcher
 import com.samsung.smartclipboard.domain.model.DataCluster
 import com.samsung.smartclipboard.domain.repository.DataRepository

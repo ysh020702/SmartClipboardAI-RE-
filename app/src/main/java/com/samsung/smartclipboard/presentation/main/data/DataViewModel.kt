@@ -2,8 +2,8 @@ package com.samsung.smartclipboard.presentation.main.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
-import com.samsung.smartclipboard.data.source.media.ScreenshotImportHandler
+import com.samsung.smartclipboard.data.source.CollectionPeriodPreferences
+import com.samsung.smartclipboard.data.source.screenshot.ScreenshotImportHandler
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
