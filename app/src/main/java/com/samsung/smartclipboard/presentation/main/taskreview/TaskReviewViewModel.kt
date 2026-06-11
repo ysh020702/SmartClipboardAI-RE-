@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
-import com.samsung.smartclipboard.domain.model.TopicActionStatus
+import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import com.samsung.smartclipboard.domain.tool.ToolExecutor
 import com.samsung.smartclipboard.domain.tool.ToolRouter
@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class QuickRefineAction(val label: String, val feedback: String) {
+enum class QuickRefineTask(val label: String, val feedback: String) {
     MORE_CONCISE("더 간결하게", "더 간결하고 짧게 만들어줘. 불필요한 설명은 빼고 핵심만 남겨줘."),
     KEY_SUMMARY("핵심만 요약", "핵심 포인트만 요약해줘. 가장 중요한 내용만 남겨줘."),
     CHANGE_TITLE("제목 바꿔줘", "제목을 더 직관적이고 이해하기 쉽게 바꿔줘."),
@@ -35,7 +35,7 @@ data class DraftVersion(
     val description: String
 )
 
-data class ActionReviewUiState(
+data class TaskReviewUiState(
     val title: String = "",
     val body: String = "",
 
@@ -60,53 +60,53 @@ data class ActionReviewUiState(
     val query: String = ""
 )
 
-sealed interface ActionReviewIntent {
-    data class Initialize(val data: Map<String, String>) : ActionReviewIntent
-    data class UpdateTitle(val title: String) : ActionReviewIntent
-    data class UpdateBody(val body: String) : ActionReviewIntent
-    data object ToggleEditMode : ActionReviewIntent
+sealed interface TaskReviewIntent {
+    data class Initialize(val data: Map<String, String>) : TaskReviewIntent
+    data class UpdateTitle(val title: String) : TaskReviewIntent
+    data class UpdateBody(val body: String) : TaskReviewIntent
+    data object ToggleEditMode : TaskReviewIntent
 
-    data class RefineFeedbackChanged(val feedback: String) : ActionReviewIntent
-    data object StartRefinement : ActionReviewIntent
-    data class QuickRefine(val action: QuickRefineAction) : ActionReviewIntent
-    data object CancelRefinement : ActionReviewIntent
+    data class RefineFeedbackChanged(val feedback: String) : TaskReviewIntent
+    data object StartRefinement : TaskReviewIntent
+    data class QuickRefine(val action: QuickRefineTask) : TaskReviewIntent
+    data object CancelRefinement : TaskReviewIntent
 
-    data class RevertToVersion(val version: Int) : ActionReviewIntent
-    data class ToggleVersionMenu(val expanded: Boolean) : ActionReviewIntent
+    data class RevertToVersion(val version: Int) : TaskReviewIntent
+    data class ToggleVersionMenu(val expanded: Boolean) : TaskReviewIntent
 
-    data object ConfirmExecution : ActionReviewIntent
-    data object DismissError : ActionReviewIntent
+    data object ConfirmExecution : TaskReviewIntent
+    data object DismissError : TaskReviewIntent
 }
 
 @HiltViewModel
-class ActionReviewViewModel @Inject constructor(
+class TaskReviewViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val refineAgent: GeminiRefineAgent,
     private val toolRouter: ToolRouter,
     private val toolExecutor: ToolExecutor
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ActionReviewUiState())
-    val uiState: StateFlow<ActionReviewUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(TaskReviewUiState())
+    val uiState: StateFlow<TaskReviewUiState> = _uiState.asStateFlow()
 
     private var currentActionDraft: AgentActionDraft? = null
     private var currentActionId: Long? = null
     private var currentSourceItems: List<CandidateItem> = emptyList()
 
-    fun onIntent(intent: ActionReviewIntent) {
+    fun onIntent(intent: TaskReviewIntent) {
         when (intent) {
-            is ActionReviewIntent.Initialize -> initializeData(intent.data)
-            is ActionReviewIntent.UpdateTitle -> _uiState.update { it.copy(title = intent.title) }
-            is ActionReviewIntent.UpdateBody -> _uiState.update { it.copy(body = intent.body) }
-            is ActionReviewIntent.ToggleEditMode -> toggleEditMode()
-            is ActionReviewIntent.RefineFeedbackChanged -> onRefineFeedbackChanged(intent.feedback)
-            is ActionReviewIntent.StartRefinement -> startRefinement()
-            is ActionReviewIntent.QuickRefine -> onQuickRefine(intent.action)
-            is ActionReviewIntent.CancelRefinement -> onCancelRefinement()
-            is ActionReviewIntent.RevertToVersion -> revertToVersion(intent.version)
-            is ActionReviewIntent.ToggleVersionMenu -> _uiState.update { it.copy(isVersionMenuExpanded = intent.expanded) }
-            is ActionReviewIntent.ConfirmExecution -> confirmExecution()
-            is ActionReviewIntent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
+            is TaskReviewIntent.Initialize -> initializeData(intent.data)
+            is TaskReviewIntent.UpdateTitle -> _uiState.update { it.copy(title = intent.title) }
+            is TaskReviewIntent.UpdateBody -> _uiState.update { it.copy(body = intent.body) }
+            is TaskReviewIntent.ToggleEditMode -> toggleEditMode()
+            is TaskReviewIntent.RefineFeedbackChanged -> onRefineFeedbackChanged(intent.feedback)
+            is TaskReviewIntent.StartRefinement -> startRefinement()
+            is TaskReviewIntent.QuickRefine -> onQuickRefine(intent.action)
+            is TaskReviewIntent.CancelRefinement -> onCancelRefinement()
+            is TaskReviewIntent.RevertToVersion -> revertToVersion(intent.version)
+            is TaskReviewIntent.ToggleVersionMenu -> _uiState.update { it.copy(isVersionMenuExpanded = intent.expanded) }
+            is TaskReviewIntent.ConfirmExecution -> confirmExecution()
+            is TaskReviewIntent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
         }
     }
 
@@ -208,7 +208,7 @@ class ActionReviewViewModel @Inject constructor(
                             parentVersion = 0,
                             history = listOf(initialVersion),
                             isLoading = false,
-                            isExecuted = action.status == TopicActionStatus.EXECUTED
+                            isExecuted = action.status == TaskSelectionStatus.EXECUTED
                         )
                     }
                 } else {
@@ -241,7 +241,7 @@ class ActionReviewViewModel @Inject constructor(
         }
     }
 
-    private fun onQuickRefine(action: QuickRefineAction) {
+    private fun onQuickRefine(action: QuickRefineTask) {
         _uiState.update { it.copy(refineInput = action.feedback) }
         startRefinement()
     }
@@ -385,7 +385,7 @@ class ActionReviewViewModel @Inject constructor(
                 if (executionResult.success) {
                     // 4. DB 상태를 EXECUTED로 업데이트
                     currentActionId?.let { id ->
-                        dataRepository.updateActionStatus(id, TopicActionStatus.EXECUTED)
+                        dataRepository.updateActionStatus(id, TaskSelectionStatus.EXECUTED)
                     }
                     _uiState.update { it.copy(isExecuting = false, isExecuted = true) }
                 } else {

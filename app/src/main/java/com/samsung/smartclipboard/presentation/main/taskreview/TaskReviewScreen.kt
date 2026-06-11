@@ -60,15 +60,15 @@ import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.actionConfigs
 
 @Composable
-fun ActionReviewScreen(
+fun TaskReviewScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
     data: Map<String, String>,
-    viewModel: ActionReviewViewModel = hiltViewModel()
+    viewModel: TaskReviewViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.onIntent(ActionReviewIntent.Initialize(data))
+        viewModel.onIntent(TaskReviewIntent.Initialize(data))
     }
 
     val backData = mapOf(
@@ -120,8 +120,8 @@ fun ActionReviewScreen(
 
 @Composable
 fun ActionReviewScreenContent(
-    uiState: ActionReviewUiState,
-    onIntent: (ActionReviewIntent) -> Unit,
+    uiState: TaskReviewUiState,
+    onIntent: (TaskReviewIntent) -> Unit,
     onBack: () -> Unit
 ) {
     // actionConfigs 및 AppColors, FieldBlock 등은 기존 환경에 정의되어 있다고 가정
@@ -172,7 +172,7 @@ fun ActionReviewScreenContent(
                             .fillMaxWidth()
                             .background(Color.White, RoundedCornerShape(14.dp))
                             .border(1.dp, config.color.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
-                            .clickable { onIntent(ActionReviewIntent.ToggleVersionMenu(true)) }
+                            .clickable { onIntent(TaskReviewIntent.ToggleVersionMenu(true)) }
                             .padding(12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
@@ -192,7 +192,7 @@ fun ActionReviewScreenContent(
 
                     DropdownMenu(
                         expanded = uiState.isVersionMenuExpanded,
-                        onDismissRequest = { onIntent(ActionReviewIntent.ToggleVersionMenu(false)) }
+                        onDismissRequest = { onIntent(TaskReviewIntent.ToggleVersionMenu(false)) }
                     ) {
                         uiState.history.sortedByDescending { it.version }.forEach { versionItem ->
                             DropdownMenuItem(
@@ -203,7 +203,7 @@ fun ActionReviewScreenContent(
                                         fontWeight = if (versionItem.version == uiState.currentVersion) FontWeight.Bold else FontWeight.Normal
                                     )
                                 },
-                                onClick = { onIntent(ActionReviewIntent.RevertToVersion(versionItem.version)) }
+                                onClick = { onIntent(TaskReviewIntent.RevertToVersion(versionItem.version)) }
                             )
                         }
                     }
@@ -223,7 +223,7 @@ fun ActionReviewScreenContent(
                         if (uiState.isEditing) {
                             OutlinedTextField(
                                 value = uiState.title,
-                                onValueChange = { onIntent(ActionReviewIntent.UpdateTitle(it)) },
+                                onValueChange = { onIntent(TaskReviewIntent.UpdateTitle(it)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
@@ -242,7 +242,7 @@ fun ActionReviewScreenContent(
                         if (uiState.isEditing) {
                             OutlinedTextField(
                                 value = uiState.body,
-                                onValueChange = { onIntent(ActionReviewIntent.UpdateBody(it)) },
+                                onValueChange = { onIntent(TaskReviewIntent.UpdateBody(it)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 7
                             )
@@ -288,13 +288,13 @@ fun ActionReviewScreenContent(
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        QuickRefineAction.values().forEach { suggestion ->
+                        QuickRefineTask.values().forEach { suggestion ->
                             Text(
                                 suggestion.label,
                                 modifier = Modifier
                                     .background(config.color.copy(alpha = 0.09f), RoundedCornerShape(20.dp))
                                     .clickable(enabled = !uiState.isRefining) {
-                                        onIntent(ActionReviewIntent.QuickRefine(suggestion))
+                                        onIntent(TaskReviewIntent.QuickRefine(suggestion))
                                     }
                                     .padding(horizontal = 12.dp, vertical = 7.dp),
                                 color = config.color,
@@ -312,7 +312,7 @@ fun ActionReviewScreenContent(
                     ) {
                         TextField(
                             value = uiState.refineInput,
-                            onValueChange = { onIntent(ActionReviewIntent.RefineFeedbackChanged(it)) },
+                            onValueChange = { onIntent(TaskReviewIntent.RefineFeedbackChanged(it)) },
                             placeholder = { Text("수정 요청을 입력하세요", fontSize = 12.sp) },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
@@ -325,7 +325,7 @@ fun ActionReviewScreenContent(
                             ),
                         )
                         Button(
-                            onClick = { onIntent(ActionReviewIntent.StartRefinement) },
+                            onClick = { onIntent(TaskReviewIntent.StartRefinement) },
                             modifier = Modifier.size(34.dp),
                             shape = RoundedCornerShape(10.dp),
                             enabled = uiState.refineInput.isNotBlank() && !uiState.isRefining,
@@ -344,7 +344,7 @@ fun ActionReviewScreenContent(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
-                    onClick = { onIntent(ActionReviewIntent.ToggleEditMode) },
+                    onClick = { onIntent(TaskReviewIntent.ToggleEditMode) },
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = config.color),
@@ -355,7 +355,7 @@ fun ActionReviewScreenContent(
                     Text(if (uiState.isEditing) "수정 완료" else "직접 편집", fontWeight = FontWeight.Bold)
                 }
                 Button(
-                    onClick = { onIntent(ActionReviewIntent.ConfirmExecution) },
+                    onClick = { onIntent(TaskReviewIntent.ConfirmExecution) },
                     enabled = !uiState.isEditing && !uiState.isRefining && !uiState.isExecuting,
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(14.dp),
