@@ -9,9 +9,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samsung.smartclipboard.domain.model.TopicAction
-import com.samsung.smartclipboard.domain.model.TopicActionStatus
-import com.samsung.smartclipboard.domain.model.TopicActionType
+import com.samsung.smartclipboard.domain.model.TaskSelection
+import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
+import com.samsung.smartclipboard.domain.model.TaskSelectionType
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import com.samsung.smartclipboard.presentation.AppColors
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class TopicActionCardUi(
+data class TaskSelectionCardUi(
     val actionId: Long,
     val routeActionType: String,
     val typeLabel: String,
@@ -38,33 +38,33 @@ data class TopicActionCardUi(
     val color: Color
 )
 
-fun TopicAction.toTopicActionCardUi(): TopicActionCardUi {
+fun TaskSelection.toTaskSelectionCardUi(): TaskSelectionCardUi {
     val typeUi = when (type) {
-        TopicActionType.SUMMARY -> TopicActionTypeUi(
+        TaskSelectionType.SUMMARY -> TaskSelectionTypeUi(
             routeActionType = "note",
             typeLabel = "요약 노트",
             icon = Icons.Default.Description,
             color = AppColors.Blue
         )
-        TopicActionType.CALENDAR -> TopicActionTypeUi(
+        TaskSelectionType.CALENDAR -> TaskSelectionTypeUi(
             routeActionType = "calendar",
             typeLabel = "캘린더",
             icon = Icons.Default.CalendarMonth,
             color = Color(0xFF2563EB)
         )
-        TopicActionType.REMINDER -> TopicActionTypeUi(
+        TaskSelectionType.REMINDER -> TaskSelectionTypeUi(
             routeActionType = "reminder",
             typeLabel = "리마인더",
             icon = Icons.Default.Notifications,
             color = AppColors.BlueDeep
         )
-        TopicActionType.SHARE_DRAFT -> TopicActionTypeUi(
+        TaskSelectionType.SHARE_DRAFT -> TaskSelectionTypeUi(
             routeActionType = "share",
             typeLabel = "공유",
             icon = Icons.Default.Share,
             color = AppColors.Cyan
         )
-        TopicActionType.TODO -> TopicActionTypeUi(
+        TaskSelectionType.TODO -> TaskSelectionTypeUi(
             routeActionType = "note",
             typeLabel = "할 일",
             icon = Icons.Default.Description,
@@ -72,7 +72,7 @@ fun TopicAction.toTopicActionCardUi(): TopicActionCardUi {
         )
     }
 
-    return TopicActionCardUi(
+    return TaskSelectionCardUi(
         actionId = id,
         routeActionType = typeUi.routeActionType,
         typeLabel = typeUi.typeLabel,
@@ -85,35 +85,35 @@ fun TopicAction.toTopicActionCardUi(): TopicActionCardUi {
     )
 }
 
-private data class TopicActionTypeUi(
+private data class TaskSelectionTypeUi(
     val routeActionType: String,
     val typeLabel: String,
     val icon: ImageVector,
     val color: Color
 )
 
-private fun TopicActionStatus.toDisplayLabel(): String {
+private fun TaskSelectionStatus.toDisplayLabel(): String {
     return when (this) {
-        TopicActionStatus.DRAFT -> "초안"
-        TopicActionStatus.EDITED -> "수정됨"
-        TopicActionStatus.EXECUTED -> "실행됨"
-        TopicActionStatus.DISMISSED -> "제외됨"
+        TaskSelectionStatus.DRAFT -> "초안"
+        TaskSelectionStatus.EDITED -> "수정됨"
+        TaskSelectionStatus.EXECUTED -> "실행됨"
+        TaskSelectionStatus.DISMISSED -> "제외됨"
     }
 }
 
-private fun TopicActionStatus.toStatusColor(): Pair<Color, Color> {
+private fun TaskSelectionStatus.toStatusColor(): Pair<Color, Color> {
     return when (this) {
-        TopicActionStatus.DRAFT -> Color(0xFFDBEAFE) to AppColors.Blue           // 초안 = 파란색
-        TopicActionStatus.EDITED -> Color(0xFFFEF3C7) to Color(0xFFD97706)       // 수정됨 = 노란색
-        TopicActionStatus.EXECUTED -> Color(0xFFD1FAE5) to AppColors.Green        // 실행됨 = 초록색
-        TopicActionStatus.DISMISSED -> Color(0xFFF1F5F9) to AppColors.Slate400   // 제외됨 = 회색
+        TaskSelectionStatus.DRAFT -> Color(0xFFDBEAFE) to AppColors.Blue           // 초안 = 파란색
+        TaskSelectionStatus.EDITED -> Color(0xFFFEF3C7) to Color(0xFFD97706)       // 수정됨 = 노란색
+        TaskSelectionStatus.EXECUTED -> Color(0xFFD1FAE5) to AppColors.Green        // 실행됨 = 초록색
+        TaskSelectionStatus.DISMISSED -> Color(0xFFF1F5F9) to AppColors.Slate400   // 제외됨 = 회색
     }
 }
 
-data class TopicSelectionUiState(
+data class TaskSelectionUiState(
     val topicId: Long? = null,
     val topicTitle: String? = null,
-    val actions: List<TopicActionCardUi> = emptyList(),
+    val actions: List<TaskSelectionCardUi> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null
 ) {
@@ -122,12 +122,12 @@ data class TopicSelectionUiState(
 }
 
 @HiltViewModel
-class TopicSelectionViewModel @Inject constructor(
+class TaskSelectionViewModel @Inject constructor(
     private val dataRepository: DataRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TopicSelectionUiState())
-    val uiState: StateFlow<TopicSelectionUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(TaskSelectionUiState())
+    val uiState: StateFlow<TaskSelectionUiState> = _uiState.asStateFlow()
 
     private var observeJob: Job? = null
     private var observedTopicId: Long? = null
@@ -153,10 +153,10 @@ class TopicSelectionViewModel @Inject constructor(
                 dataRepository.observeTopicActions(topicId)
             ) { topics, actions ->
                 val topicTitle = topics.firstOrNull { it.id == topicId }?.title ?: fallbackTitle
-                TopicSelectionUiState(
+                TaskSelectionUiState(
                     topicId = topicId,
                     topicTitle = topicTitle,
-                    actions = actions.map { it.toTopicActionCardUi() },
+                    actions = actions.map { it.toTaskSelectionCardUi() },
                     isLoading = false,
                     errorMessage = null
                 )

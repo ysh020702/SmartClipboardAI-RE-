@@ -42,10 +42,10 @@ import com.samsung.smartclipboard.presentation.Pill
 import com.samsung.smartclipboard.presentation.Screen
 
 @Composable
-fun TopicSelectionScreen(
+fun TaskSelectionScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
     data: Map<String, String>,
-    viewModel: TopicSelectionViewModel = hiltViewModel(),
+    viewModel: TaskSelectionViewModel = hiltViewModel(),
 ) {
     val from = data["from"].orEmpty()
     val query = data["query"].orEmpty()
@@ -167,7 +167,7 @@ private fun TopicSelectionMessage(text: String) {
 }
 
 @Composable
-private fun TopicActionRow(action: TopicActionCardUi, onClick: () -> Unit) {
+private fun TopicActionRow(action: TaskSelectionCardUi, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
