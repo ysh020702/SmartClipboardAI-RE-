@@ -6,7 +6,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
@@ -34,7 +33,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +47,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.samsung.smartclipboard.data.source.local.CollectionPeriod
 import com.samsung.smartclipboard.presentation.main.storage.StorageViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -58,10 +58,9 @@ import java.util.Locale
 fun StorageScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
     data: Map<String, String> = emptyMap(),
-    viewModel: StorageViewModel = hiltViewModel(),
+    storageViewModel: StorageViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
+    val uiState by storageViewModel.uiState.collectAsStateWithLifecycle()
     val storageOptions = listOf(250 to "250 MB", 500 to "500 MB", 1024 to "1 GB")
     var storageLimit by remember { mutableStateOf(500) }
     val usedStorage = 486.9f
@@ -75,60 +74,15 @@ fun StorageScreen(
         }
     }
 
-    if (uiState.showStartDatePicker) {
-        val calendar = Calendar.getInstance()
-        if (uiState.startDate != null) {
-            val cal = Calendar.getInstance().apply { timeInMillis = uiState.startDate!! }
-            calendar.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
-        }
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                val selected = Calendar.getInstance().apply {
-                    set(year, month, dayOfMonth, 0, 0, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-                viewModel.setStartDate(selected)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).apply {
-            setOnCancelListener { viewModel.hideStartDatePicker() }
-            setOnDismissListener { viewModel.hideStartDatePicker() }
-        }.show()
+    BackHandler {
+        navigateBack()
     }
-
-    if (uiState.showEndDatePicker) {
-        val calendar = Calendar.getInstance()
-        if (uiState.endDate != null) {
-            val cal = Calendar.getInstance().apply { timeInMillis = uiState.endDate!! }
-            calendar.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
-        }
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                val selected = Calendar.getInstance().apply {
-                    set(year, month, dayOfMonth, 23, 59, 59)
-                    set(Calendar.MILLISECOND, 999)
-                }.timeInMillis
-                viewModel.setEndDate(selected)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).apply {
-            setOnCancelListener { viewModel.hideEndDatePicker() }
-            setOnDismissListener { viewModel.hideEndDatePicker() }
-        }.show()
-    }
-
-    BackHandler { navigateBack() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF7F8FA))
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -151,116 +105,22 @@ fun StorageScreen(
 
         Spacer(Modifier.height(18.dp))
 
-        SettingsCard(
-            title = "수집 기간",
-            subtitle = uiState.periodDescription,
-            icon = Icons.Default.CalendarMonth,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("시작 날짜", color = Color(0xFF8A94A6), fontSize = 10.sp)
-                    Text(
-                        text = uiState.startDate?.let { formatDate(it) } ?: "처음부터",
-                        color = Color(0xFF111827), fontSize = 14.sp, fontWeight = FontWeight.Bold
-                    )
-                }
-                Row {
-                    if (uiState.startDate != null) {
-                        Button(
-                            onClick = { viewModel.setStartDate(null) },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2), contentColor = Color(0xFFDC2626)),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                        ) {
-                            Icon(Icons.Default.Close, null, modifier = Modifier.size(12.dp))
-                            Spacer(Modifier.width(2.dp))
-                            Text("초기화", fontSize = 9.sp)
-                        }
-                        Spacer(Modifier.width(6.dp))
-                    }
-                    Button(
-                        onClick = { viewModel.showStartDatePicker() },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE7F5FE), contentColor = Color(0xFF1688E8)),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                    ) {
-                        Icon(Icons.Default.CalendarMonth, null, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("선택", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("종료 날짜", color = Color(0xFF8A94A6), fontSize = 10.sp)
-                    Text(
-                        text = uiState.endDate?.let { formatDate(it) } ?: "현재까지",
-                        color = Color(0xFF111827), fontSize = 14.sp, fontWeight = FontWeight.Bold
-                    )
-                }
-                Row {
-                    if (uiState.endDate != null) {
-                        Button(
-                            onClick = { viewModel.setEndDate(null) },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2), contentColor = Color(0xFFDC2626)),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                        ) {
-                            Icon(Icons.Default.Close, null, modifier = Modifier.size(12.dp))
-                            Spacer(Modifier.width(2.dp))
-                            Text("초기화", fontSize = 9.sp)
-                        }
-                        Spacer(Modifier.width(6.dp))
-                    }
-                    Button(
-                        onClick = { viewModel.showEndDatePicker() },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE7F5FE), contentColor = Color(0xFF1688E8)),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                    ) {
-                        Icon(Icons.Default.CalendarMonth, null, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("선택", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            Button(
-                onClick = { viewModel.resetAndLoadData() },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (uiState.isLoading) Color(0xFFF1F5F9) else Color(0xFFFEF2F2),
-                    contentColor = if (uiState.isLoading) Color(0xFF94A3B8) else Color(0xFFDC2626)
-                ),
-                border = BorderStroke(1.dp, if (uiState.isLoading) Color(0xFFE2E8F0) else Color(0xFFFECACA)),
-                contentPadding = PaddingValues(vertical = 10.dp),
-                enabled = !uiState.isLoading
-            ) {
-                if (uiState.isLoading) {
-                    Text("데이터 초기화 중...", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                } else {
-                    Text("데이터 초기화", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
+        // 수집 기간 카드
+        CollectionPeriodCard(
+            collectionPeriod = uiState.collectionPeriod,
+            itemCountInPeriod = uiState.itemCountInPeriod,
+            totalItemCount = uiState.totalItemCount,
+            onStartClick = { storageViewModel.setStartDate(it) },
+            onEndClick = { storageViewModel.setEndDate(it) },
+            onClearStart = { storageViewModel.setStartDate(null) },
+            onClearEnd = { storageViewModel.setEndDate(null) },
+        )
 
         Spacer(Modifier.height(12.dp))
 
         SettingsCard(
             title = "저장공간",
-            subtitle = "19,087개 항목",
+            subtitle = "${uiState.totalItemCount}개 항목",
             icon = Icons.Default.Storage,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -269,9 +129,19 @@ fun StorageScreen(
             }
             Spacer(Modifier.height(12.dp))
             Box(
-                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFEAF1F8)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFEAF1F8)),
             ) {
-                Box(modifier = Modifier.fillMaxWidth(percent).height(10.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1688E8)))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(percent)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF1688E8)),
+                )
             }
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -286,7 +156,7 @@ fun StorageScreen(
         Spacer(Modifier.height(12.dp))
 
         SettingsCard(
-            title = "권한 허용 됨",
+            title = "권한 허용됨",
             subtitle = "이미지와 스크린샷을 확인할 수 있어요.",
             icon = Icons.Default.Security,
             trailing = { Icon(Icons.Default.Check, null, tint = Color(0xFF16A34A), modifier = Modifier.size(18.dp)) },
@@ -309,9 +179,129 @@ fun StorageScreen(
     }
 }
 
-private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("yyyy.MM.dd", Locale.KOREA)
-    return sdf.format(java.util.Date(timestamp))
+@Composable
+private fun CollectionPeriodCard(
+    collectionPeriod: CollectionPeriod,
+    itemCountInPeriod: Int,
+    totalItemCount: Int,
+    onStartClick: (Long) -> Unit,
+    onEndClick: (Long) -> Unit,
+    onClearStart: () -> Unit,
+    onClearEnd: () -> Unit,
+) {
+    val context = LocalContext.current
+    val dateFormat = SimpleDateFormat("yyyy.MM.dd", Locale.KOREA)
+
+    val startLabel = collectionPeriod.startDateMs?.let { dateFormat.format(it) } ?: "처음부터"
+    val endLabel = collectionPeriod.endDateMs?.let { dateFormat.format(it) } ?: "현재까지"
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(18.dp))
+            .border(1.dp, Color(0xFFE6EAF2), RoundedCornerShape(18.dp))
+            .padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("수집 기간", color = Color(0xFF111827), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                Text("기간 내 데이터 ${itemCountInPeriod}개 / 전체 ${totalItemCount}개", color = Color(0xFF8A94A6), fontSize = 10.sp)
+            }
+            Box(Modifier.size(34.dp).background(AppColors.BlueSoft, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.CalendarMonth, null, tint = Color(0xFF1688E8), modifier = Modifier.size(17.dp))
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // 시작 날짜
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFF7F8FA))
+                .border(1.dp, Color(0xFFE6EAF2), RoundedCornerShape(14.dp))
+                .clickable {
+                    val calendar = Calendar.getInstance()
+                    if (collectionPeriod.startDateMs != null) {
+                        calendar.timeInMillis = collectionPeriod.startDateMs
+                    }
+                    DatePickerDialog(
+                        context,
+                        { _, year, month, day ->
+                            val cal = Calendar.getInstance().apply { set(year, month, day, 0, 0, 0) }
+                            onStartClick(cal.timeInMillis)
+                        },
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH)
+                    ).show()
+                }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Default.CalendarMonth, null, tint = Color(0xFF1688E8), modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("시작 날짜", color = Color(0xFF8A94A6), fontSize = 9.sp)
+                Text(startLabel, color = Color(0xFF111827), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+            if (collectionPeriod.startDateMs != null) {
+                Text(
+                    "초기화",
+                    color = AppColors.Blue,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onClearStart() }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 종료 날짜
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFF7F8FA))
+                .border(1.dp, Color(0xFFE6EAF2), RoundedCornerShape(14.dp))
+                .clickable {
+                    val calendar = Calendar.getInstance()
+                    if (collectionPeriod.endDateMs != null) {
+                        calendar.timeInMillis = collectionPeriod.endDateMs
+                    }
+                    DatePickerDialog(
+                        context,
+                        { _, year, month, day ->
+                            val cal = Calendar.getInstance().apply { set(year, month, day, 23, 59, 59) }
+                            onEndClick(cal.timeInMillis)
+                        },
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH)
+                    ).show()
+                }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Default.CalendarMonth, null, tint = Color(0xFF1688E8), modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("종료 날짜", color = Color(0xFF8A94A6), fontSize = 9.sp)
+                Text(endLabel, color = Color(0xFF111827), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+            if (collectionPeriod.endDateMs != null) {
+                Text(
+                    "초기화",
+                    color = AppColors.Blue,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onClearEnd() }
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -323,7 +313,11 @@ private fun SettingsCard(
     content: @Composable (() -> Unit)? = null,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(18.dp)).border(1.dp, Color(0xFFE6EAF2), RoundedCornerShape(18.dp)).padding(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(18.dp))
+            .border(1.dp, Color(0xFFE6EAF2), RoundedCornerShape(18.dp))
+            .padding(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
