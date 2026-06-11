@@ -45,8 +45,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.samsung.smartclipboard.presentation.main.taskreview.ActionReviewScreen
-import com.samsung.smartclipboard.presentation.main.aitopicselection.TopicAiSuggestScreen
+import com.samsung.smartclipboard.presentation.main.taskreview.TaskReviewScreen
+import com.samsung.smartclipboard.presentation.main.aitopicselection.AiTopicSelectionScreen
 import com.samsung.smartclipboard.presentation.main.aitopicselection.AnalyzingScreen
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.DarkGradient
@@ -56,10 +56,10 @@ import com.samsung.smartclipboard.presentation.main.home.HomeScreen
 import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.StorageScreen
 import com.samsung.smartclipboard.presentation.TasksScreen
-import com.samsung.smartclipboard.presentation.main.taskselection.TopicSelectionScreen
+import com.samsung.smartclipboard.presentation.main.taskselection.TaskSelectionScreen
 import com.samsung.smartclipboard.presentation.main.data.DataScreen
 import com.samsung.smartclipboard.presentation.main.home.HomePortalTransition
-import com.samsung.smartclipboard.presentation.main.manualdataselection.TopicDataSelectionScreen
+import com.samsung.smartclipboard.presentation.main.manualdataselection.ManualDataSelectionScreen
 
 @Composable
 fun MainScreen(
@@ -220,7 +220,7 @@ private fun MainScreenContent(
                                 data = navData,
                             )
 
-                            Screen.AiSuggest -> TopicAiSuggestScreen(
+                            Screen.AiSuggest -> AiTopicSelectionScreen(
                                 navigate = navigate,
                                 data = navData,
                             )
@@ -230,17 +230,17 @@ private fun MainScreenContent(
                                 data = navData,
                             )
 
-                            Screen.TopicDetail -> TopicSelectionScreen(
+                            Screen.TopicDetail -> TaskSelectionScreen(
                                 navigate = navigate,
                                 data = navData,
                             )
 
-                            Screen.ActionReview -> ActionReviewScreen(
+                            Screen.ActionReview -> TaskReviewScreen(
                                 navigate = navigate,
                                 data = navData,
                             )
 
-                            Screen.TopicDataSelect -> TopicDataSelectionScreen(
+                            Screen.TopicDataSelect -> ManualDataSelectionScreen(
                                 topicTitle = navData["topic"].orEmpty(),
                                 navigate = navigate,
                             )

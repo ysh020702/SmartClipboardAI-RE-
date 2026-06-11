@@ -7,33 +7,30 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.samsung.smartclipboard.data.source.period.CollectionPeriodManager
+import com.samsung.smartclipboard.data.source.local.CollectionPeriodPreferences
 import com.samsung.smartclipboard.presentation.SmartClipboardTheme
-import com.samsung.smartclipboard.presentation.main.permission.CollectionPeriodSetupScreen
 import com.samsung.smartclipboard.presentation.main.permission.MediaPermissionHelper
+import com.samsung.smartclipboard.presentation.main.permission.OnboardingDateScreen
 import com.samsung.smartclipboard.presentation.main.permission.PermissionScreen
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private var hasMediaPermission by mutableStateOf(false)
-    private var showPeriodSetup by mutableStateOf(false)
-
     @Inject
-    lateinit var collectionPeriodManager: CollectionPeriodManager
+    lateinit var collectionPeriodPreferences: CollectionPeriodPreferences
+
+    private var hasMediaPermission by mutableStateOf(false)
+    private var isOnboardingCompleted by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
-
-        if (hasMediaPermission) {
-            val prefs = getSharedPreferences("app_setup", MODE_PRIVATE)
-            val hasCompletedSetup = prefs.getBoolean("period_setup_completed", false)
-            showPeriodSetup = !hasCompletedSetup
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,42 +38,32 @@ class MainActivity : ComponentActivity() {
 
         hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
 
-        if (hasMediaPermission) {
-            val prefs = getSharedPreferences("app_setup", MODE_PRIVATE)
-            val hasCompletedSetup = prefs.getBoolean("period_setup_completed", false)
-            showPeriodSetup = !hasCompletedSetup
+        // 온보딩 완료 여부 확인
+        CoroutineScope(Dispatchers.Main).launch {
+            collectionPeriodPreferences.isOnboardingCompleted.collect { completed ->
+                isOnboardingCompleted = completed
+            }
         }
 
         setContent {
             SmartClipboardTheme {
                 when {
-                    !hasMediaPermission -> {
-                        PermissionScreen(
-                            onRequestPermission = {
-                                requestMediaPermission()
+                    !hasMediaPermission -> PermissionScreen(
+                        onRequestPermission = {
+                            requestMediaPermission()
+                        }
+                    )
+
+                    !isOnboardingCompleted -> OnboardingDateScreen(
+                        onComplete = { startMs, endMs ->
+                            CoroutineScope(Dispatchers.IO).launch {
+                                collectionPeriodPreferences.setCollectionPeriod(startMs, endMs)
+                                collectionPeriodPreferences.setOnboardingCompleted()
                             }
-                        )
-                    }
-                    showPeriodSetup -> {
-                        CollectionPeriodSetupScreen(
-                            onStartPeriodSelected = { timestamp ->
-                                collectionPeriodManager.startDate = timestamp
-                            },
-                            onEndPeriodSelected = { timestamp ->
-                                collectionPeriodManager.endDate = timestamp
-                            },
-                            onComplete = {
-                                getSharedPreferences("app_setup", MODE_PRIVATE)
-                                    .edit()
-                                    .putBoolean("period_setup_completed", true)
-                                    .apply()
-                                showPeriodSetup = false
-                            }
-                        )
-                    }
-                    else -> {
-                        MainScreen()
-                    }
+                        }
+                    )
+
+                    else -> MainScreen()
                 }
             }
         }
