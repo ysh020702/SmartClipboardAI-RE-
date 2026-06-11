@@ -166,6 +166,10 @@ class DataRepositoryImpl @Inject constructor(
         dataItemDao.deleteById(id)
     }
 
+    override suspend fun deleteAllItems() {
+        dataItemDao.clearAll()
+    }
+
     override suspend fun clearAll() {
         dataItemDao.clearAll()
     }
@@ -325,6 +329,18 @@ class DataRepositoryImpl @Inject constructor(
 
     override suspend fun deleteTopicsByIds(topicIds: List<Long>) {
         topicIds.forEach { id -> deleteTopicById(id) }
+    }
+
+    override fun observeItemsInRange(startTime: Long?, endTime: Long?): Flow<List<DataItem>> {
+        val flow = when {
+            startTime != null && endTime != null -> dataItemDao.observeBetweenTime(startTime, endTime)
+            startTime != null -> dataItemDao.observeFromTime(startTime)
+            endTime != null -> dataItemDao.observeUntilTime(endTime)
+            else -> dataItemDao.observeAll()
+        }
+        return flow.map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 
     /**
