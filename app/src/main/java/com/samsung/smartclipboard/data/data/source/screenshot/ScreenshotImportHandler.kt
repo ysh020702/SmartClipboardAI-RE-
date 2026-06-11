@@ -36,7 +36,7 @@ class ScreenshotImportHandler @Inject constructor(
                     )
                 }
 
-                val allItems = fetchRecentScreenshot( limit = 10 )  //500개의 이미지 중 스크린샷만 가져옵니다.
+                val allItems = fetchRecentScreenshot( limit = 50 )  //500개의 이미지 중 스크린샷만 가져옵니다.
                 if (allItems.isEmpty()) {
                     return@withContext MediaImportResult(
                         isSuccess = false,
