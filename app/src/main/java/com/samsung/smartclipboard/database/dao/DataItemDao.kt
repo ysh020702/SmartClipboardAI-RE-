@@ -48,6 +48,12 @@ interface DataItemDao {
     @Query("SELECT COUNT(*) FROM data_items WHERE createdAt >= :startMs AND createdAt <= :endMs")
     suspend fun countInRange(startMs: Long, endMs: Long): Int
 
+    @Query("SELECT COUNT(*) FROM data_items WHERE createdAt >= :startMs")
+    suspend fun countFromStart(startMs: Long): Int
+
+    @Query("SELECT COUNT(*) FROM data_items WHERE createdAt <= :endMs")
+    suspend fun countUntilEnd(endMs: Long): Int
+
     @Query("SELECT COUNT(*) FROM data_items")
     suspend fun countAll(): Int
 }
