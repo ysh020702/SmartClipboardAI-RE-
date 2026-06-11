@@ -340,6 +340,8 @@ class DataRepositoryImpl @Inject constructor(
     override suspend fun getItemCount(startMs: Long?, endMs: Long?): Int {
         return when {
             startMs != null && endMs != null -> dataItemDao.countInRange(startMs, endMs)
+            startMs != null -> dataItemDao.countFromStart(startMs)
+            endMs != null -> dataItemDao.countUntilEnd(endMs)
             else -> dataItemDao.countAll()
         }
     }
