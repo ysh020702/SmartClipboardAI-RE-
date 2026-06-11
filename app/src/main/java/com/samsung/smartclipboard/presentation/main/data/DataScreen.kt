@@ -102,7 +102,8 @@ fun DataScreen(
 
     LaunchedEffect(deferLoading) {
         if (!deferLoading) {
-            dataViewModel.loadAndProcessData()
+            dataViewModel.importScreenShot()
+            dataViewModel.observeDataItems()
         }
     }
 
