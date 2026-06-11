@@ -17,7 +17,7 @@ data class AgentResult(
  * TopicActionEntity로 변환되어 저장됩니다.
  */
 data class AgentActionDraft(
-    val type: TopicActionType,
+    val type: TaskSelectionType,
     val confidence: Float,
     val reason: String,
     val title: String,
