@@ -105,4 +105,5 @@ dependencies {
     implementation("net.dankito.readability4j:readability4j:1.0.8")
     implementation("com.google.mediapipe:tasks-text:0.10.29")
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
+    implementation(libs.datastore.preferences)
 }
