@@ -18,7 +18,7 @@ data class DataItem(
     val effectiveContent: String
         get() = when (type) {
             DataItemType.TEXT -> content
-            DataItemType.LINK -> LinkMetadataCodec.previewText(extractedContent) ?: extractedContent ?: content
+            DataItemType.LINK -> LinkMetadataCodec.analysisText(extractedContent) ?: extractedContent ?: content
             else -> extractedContent ?: content
         }
 }
