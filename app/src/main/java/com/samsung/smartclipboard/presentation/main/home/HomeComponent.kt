@@ -101,6 +101,7 @@ internal object PanelDefaults {
     const val CloseThresholdFraction = 0.18f
     const val OpenThresholdFraction = 0.82f
     const val DataPanelOpenThresholdFraction = 0.15f  // 오른→왼 스와이프는 제스처 추적 없이 임계값만 넘으면 열림
+    const val NavigationAfterDismissDelayMillis = 210L
     val SettingsIconElevation = 20.dp
     val FloatingButtonElevation = 12.dp
 }
@@ -504,6 +505,19 @@ internal fun HomeSettingsPanel(
     onNavigate: (Screen, Map<String, String>) -> Unit,
     historyViewModel: HistoryViewModel = hiltViewModel(),
 ) {
+    val navigationScope = rememberCoroutineScope()
+    var navigationPending by remember { mutableStateOf(false) }
+
+    fun navigateAfterPanelDismiss(screen: Screen, data: Map<String, String>) {
+        if (navigationPending) return
+        navigationPending = true
+        navigationScope.launch {
+            onDismiss()
+            delay(PanelDefaults.NavigationAfterDismissDelayMillis)
+            onNavigate(screen, data)
+        }
+    }
+
     SlidePanel(
         visible = visible,
         direction = SlideDirection.FromLeft,
@@ -541,7 +555,12 @@ internal fun HomeSettingsPanel(
                 QuickAccessRow(
                     icon = Icons.Default.FolderOpen,
                     title = "설정",
-                    onClick = { onNavigate(Screen.Storage, mapOf("from" to "homePanel")) },
+                    onClick = {
+                        navigateAfterPanelDismiss(
+                            Screen.Storage,
+                            mapOf("from" to "homePanel"),
+                        )
+                    },
                 )
 
                 Box(

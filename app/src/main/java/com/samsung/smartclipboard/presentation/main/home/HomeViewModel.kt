@@ -4,7 +4,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.samsung.smartclipboard.data.source.screenshot.ScreenshotImportHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,24 +14,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val screenshotImportHandler: ScreenshotImportHandler,
-) : ViewModel() {
+class HomeViewModel @Inject constructor() : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-
-    // === 스크린샷 수집 ===
-
-    fun importScreenShot() {
-        viewModelScope.launch {
-            runCatching {
-                screenshotImportHandler.importRecentScreenshots()
-            }.onFailure { throwable ->
-                throwable.printStackTrace()
-            }
-        }
-    }
 
     // === 쿼리 ===
 

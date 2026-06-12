@@ -87,7 +87,7 @@ fun StorageScreen(
 
     fun navigateBack() {
         if (data["from"] == "homePanel") {
-            navigate(Screen.Home, mapOf("openPanel" to "instant"))
+            navigate(Screen.Home, mapOf("openPanel" to "true"))
         } else {
             navigate(Screen.Home, emptyMap())
         }

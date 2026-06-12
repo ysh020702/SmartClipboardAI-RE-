@@ -63,7 +63,7 @@ fun PermissionScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             Text(
-                text = "사진 접근 권한이 필요합니다",
+                text = "스크린샷을 작업 재료로 사용할게요",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A),
@@ -73,7 +73,7 @@ fun PermissionScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "SmartClipboard AI는 스크린샷과 이미지 데이터를 확인하기 위해 사진 접근 권한이 필요합니다.\n권한을 허용하면 모든 기능을 사용할 수 있습니다.",
+                text = "권한을 허용하면 최근 스크린샷을 확인해\nAI가 정리할 만한 주제를 추천할 수 있도록 준비합니다.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF64748B),
                 textAlign = TextAlign.Center,
@@ -120,7 +120,7 @@ fun PermissionScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "권한 없이도 앱을 사용할 수 있지만, 일부 기능이 제한됩니다.\n나중에 설정에서 권한을 허용할 수 있습니다.",
+                text = "사용자 확인 없이 외부 앱에 실행하거나 전송하지 않습니다.\n나중에 설정에서 권한을 허용할 수 있습니다.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF94A3B8),
                 textAlign = TextAlign.Center,

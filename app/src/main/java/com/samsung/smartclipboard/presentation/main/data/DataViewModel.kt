@@ -3,7 +3,6 @@ package com.samsung.smartclipboard.presentation.main.data
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.data.source.CollectionPeriodPreferences
-import com.samsung.smartclipboard.data.source.screenshot.ScreenshotImportHandler
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
 import com.samsung.smartclipboard.domain.model.LinkMetadataCodec
@@ -23,7 +22,6 @@ import javax.inject.Inject
 @HiltViewModel
 class DataViewModel @Inject constructor(
     private val dataRepository: DataRepository,
-    private val screenshotImportHandler: ScreenshotImportHandler,
     private val collectionPeriodPreferences: CollectionPeriodPreferences
 ) : ViewModel() {
 
@@ -55,16 +53,6 @@ class DataViewModel @Inject constructor(
                             enrichMissingLinkMetadata(items)
                         }
                 }
-        }
-    }
-
-    fun importScreenShot() {
-        viewModelScope.launch {
-            runCatching {
-                screenshotImportHandler.importRecentScreenshots()
-            }.onFailure { throwable ->
-                throwable.printStackTrace()
-            }
         }
     }
 

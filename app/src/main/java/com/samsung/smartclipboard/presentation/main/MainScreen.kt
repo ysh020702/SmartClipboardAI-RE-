@@ -117,6 +117,26 @@ private fun MainScreenContent(
                                 easing = FastOutSlowInEasing,
                             ),
                         )
+                    } else if (isHomePanelStorageTransition()) {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 220,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + slideInHorizontally(
+                            animationSpec = tween(
+                                durationMillis = 260,
+                                easing = FastOutSlowInEasing,
+                            ),
+                            initialOffsetX = { -it / 12 },
+                        )
+                    } else if (isStorageHomePanelReturnTransition()) {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 220,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        )
                     } else {
                         fadeIn(
                             animationSpec = tween(
@@ -139,6 +159,32 @@ private fun MainScreenContent(
                                 durationMillis = HomePortalTransition.MainScreenCrossfadeMillis,
                                 easing = FastOutSlowInEasing,
                             ),
+                        )
+                    } else if (isHomePanelStorageTransition()) {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 180,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + slideOutHorizontally(
+                            animationSpec = tween(
+                                durationMillis = 220,
+                                easing = FastOutSlowInEasing,
+                            ),
+                            targetOffsetX = { it / 18 },
+                        )
+                    } else if (isStorageHomePanelReturnTransition()) {
+                        fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 180,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + slideOutHorizontally(
+                            animationSpec = tween(
+                                durationMillis = 220,
+                                easing = FastOutSlowInEasing,
+                            ),
+                            targetOffsetX = { it / 10 },
                         )
                     } else {
                         fadeOut(
@@ -373,6 +419,18 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.isPortalAiSuggestT
     return initialState.routeBase() == "home" &&
         targetState.routeBase() == "aiSuggest" &&
         targetState.navData()["mode"] == "ai_topic_recommend"
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isHomePanelStorageTransition(): Boolean {
+    return initialState.routeBase() == "home" &&
+        targetState.routeBase() == "storage" &&
+        targetState.navData()["from"] == "homePanel"
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isStorageHomePanelReturnTransition(): Boolean {
+    return initialState.routeBase() == "storage" &&
+        targetState.routeBase() == "home" &&
+        targetState.navData()["openPanel"] != null
 }
 
 private fun NavBackStackEntry.routeBase(): String? {

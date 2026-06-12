@@ -24,9 +24,12 @@ class ScreenshotImportHandler @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
 
-    suspend fun importRecentScreenshots(): MediaImportResult {
+    suspend fun importRecentScreenshots(
+        onProgress: suspend (Float) -> Unit = {},
+    ): MediaImportResult {
         return withContext(ioDispatcher) {
             try {
+                onProgress(0.05f)
                 if (!hasImageReadPermission()) {
                     return@withContext MediaImportResult(
                         isSuccess = false,
@@ -36,10 +39,13 @@ class ScreenshotImportHandler @Inject constructor(
                     )
                 }
 
+                onProgress(0.10f)
                 val allItems = fetchRecentScreenshot( limit = 50 )  //500개의 이미지 중 스크린샷만 가져옵니다.
+                onProgress(0.35f)
                 if (allItems.isEmpty()) {
+                    onProgress(1.0f)
                     return@withContext MediaImportResult(
-                        isSuccess = false,
+                        isSuccess = true,
                         importedCount = 0,
                         scannedCount = 0,
                         message = "No recent media found"
@@ -47,7 +53,9 @@ class ScreenshotImportHandler @Inject constructor(
                 }
 
                 val screenshots = allItems.filter { it.isScreenshot }
+                onProgress(0.50f)
                 if (screenshots.isEmpty()) {
+                    onProgress(1.0f)
                     return@withContext MediaImportResult(
                         isSuccess = true,
                         importedCount = 0,
@@ -58,6 +66,7 @@ class ScreenshotImportHandler @Inject constructor(
 
                 // Check existing items to avoid duplicates
                 val existingItems = dataRepository.observeItems().first()
+                onProgress(0.70f)
                 val existingByUri = existingItems.associateBy { it.content }
                 val existingUris = existingByUri.keys
 
@@ -77,6 +86,7 @@ class ScreenshotImportHandler @Inject constructor(
                 val newScreenshots = screenshots.filter { it.uri !in existingUris }
 
                 if (newScreenshots.isEmpty()) {
+                    onProgress(1.0f)
                     return@withContext MediaImportResult(
                         isSuccess = true,
                         importedCount = 0,
@@ -85,7 +95,7 @@ class ScreenshotImportHandler @Inject constructor(
                     )
                 }
 
-                for (item in newScreenshots) {
+                newScreenshots.forEachIndexed { index, item ->
                     dataRepository.addScreenshot(
                         uri = item.uri,
                         title = item.displayName,
@@ -93,8 +103,11 @@ class ScreenshotImportHandler @Inject constructor(
                         source = "mediastore_screenshot",
                         createdAt = item.createdAt
                     )
+                    val saveProgress = (index + 1).toFloat() / newScreenshots.size
+                    onProgress(0.70f + saveProgress * 0.30f)
                 }
 
+                onProgress(1.0f)
                 MediaImportResult(
                     isSuccess = true,
                     importedCount = newScreenshots.size,
