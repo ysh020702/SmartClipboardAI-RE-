@@ -1,7 +1,12 @@
 package com.samsung.smartclipboard.presentation
 
 import android.app.DatePickerDialog
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,12 +30,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samsung.smartclipboard.data.source.CollectionPeriod
+import com.samsung.smartclipboard.presentation.main.permission.MediaPermissionHelper
 import com.samsung.smartclipboard.presentation.main.storage.StorageViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -58,9 +67,19 @@ import java.util.Locale
 fun StorageScreen(
     navigate: (Screen, Map<String, String>) -> Unit,
     data: Map<String, String> = emptyMap(),
+    hasMediaPermission: Boolean = false,
     storageViewModel: StorageViewModel = hiltViewModel(),
 ) {
     val uiState by storageViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var currentPermissionState by remember { mutableStateOf(hasMediaPermission) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        currentPermissionState = MediaPermissionHelper.hasImageReadPermission(context)
+    }
+
     val storageOptions = listOf(250 to "250 MB", 500 to "500 MB", 1024 to "1 GB")
     var storageLimit by remember { mutableStateOf(500) }
     val usedStorage = 486.9f
@@ -99,7 +118,6 @@ fun StorageScreen(
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("설정", color = Color(0xFF111827), fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
-                Text("수집 범위와 저장공간", color = Color(0xFF8A94A6), fontSize = 11.sp)
             }
         }
 
@@ -118,48 +136,18 @@ fun StorageScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        SettingsCard(
-            title = "저장공간",
-            subtitle = "${uiState.totalItemCount}개 항목",
-            icon = Icons.Default.Storage,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${usedStorage} MB / ${if (storageLimit >= 1024) "1 GB" else "$storageLimit MB"}", color = Color(0xFF111827), fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-                Text("정리하기", color = AppColors.Blue, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { navigate(Screen.Data, mapOf("mode" to "cleanup")) })
-            }
-            Spacer(Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFEAF1F8)),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(percent)
-                        .height(10.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF1688E8)),
-                )
-            }
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                storageOptions.forEach { (value, label) ->
-                    PillButton(label = label, active = storageLimit == value) {
-                        if (value >= usedStorage) storageLimit = value
+        PermissionCard(
+            hasPermission = currentPermissionState,
+            onTogglePermission = { enabled ->
+                if (enabled) {
+                    permissionLauncher.launch(MediaPermissionHelper.requiredMediaPermissions())
+                } else {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        setData(Uri.fromParts("package", context.packageName, null))
                     }
+                    context.startActivity(intent)
                 }
             }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        SettingsCard(
-            title = "권한 허용됨",
-            subtitle = "이미지와 스크린샷을 확인할 수 있어요.",
-            icon = Icons.Default.Security,
-            trailing = { Icon(Icons.Default.Check, null, tint = Color(0xFF16A34A), modifier = Modifier.size(18.dp)) },
         )
 
         Spacer(Modifier.height(12.dp))
@@ -332,6 +320,71 @@ private fun SettingsCard(
         if (content != null) {
             Spacer(Modifier.height(14.dp))
             content()
+        }
+    }
+}
+
+@Composable
+private fun PermissionCard(
+    hasPermission: Boolean,
+    onTogglePermission: (Boolean) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White, RoundedCornerShape(18.dp))
+            .border(1.dp, Color(0xFFE6EAF2), RoundedCornerShape(18.dp))
+            .padding(14.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (hasPermission) "권한 허용됨" else "권한 미허용",
+                    color = Color(0xFF111827),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+                Text(
+                    if (hasPermission) "이미지와 스크린샷을 확인할 수 있어요." else "권한을 허용하면 이미지를 확인할 수 있어요.",
+                    color = Color(0xFF8A94A6),
+                    fontSize = 10.sp,
+                )
+            }
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .background(AppColors.BlueSoft, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.Security,
+                    null,
+                    tint = Color(0xFF1688E8),
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Switch(
+                checked = hasPermission,
+                onCheckedChange = onTogglePermission,
+                colors = SwitchDefaults.colors(
+                    checkedTrackColor = Color(0xFF2563EB),
+                    checkedThumbColor = Color.White,
+                    uncheckedTrackColor = Color(0xFFE2E8F0),
+                    uncheckedThumbColor = Color.White,
+                ),
+            )
+        }
+        if (!hasPermission) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "권한을 끄려면 시스템 설정에서 변경할 수 있습니다.",
+                color = Color(0xFF94A3B8),
+                fontSize = 9.sp,
+            )
         }
     }
 }
