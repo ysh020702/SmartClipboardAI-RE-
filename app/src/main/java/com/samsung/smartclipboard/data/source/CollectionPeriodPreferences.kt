@@ -1,6 +1,7 @@
 package com.samsung.smartclipboard.data.source
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -26,6 +27,7 @@ class CollectionPeriodPreferences @Inject constructor(
         val KEY_START_DATE_MS = longPreferencesKey("start_date_ms")
         val KEY_END_DATE_MS = longPreferencesKey("end_date_ms")
         val KEY_ONBOARDING_COMPLETED = longPreferencesKey("onboarding_completed")
+        val KEY_PERMISSION_SKIPPED = booleanPreferencesKey("permission_skipped")
     }
 
     /** 수집 기간 설정을 Flow로 관찰한다. null은 "제한 없음"을 의미한다. */
@@ -39,6 +41,11 @@ class CollectionPeriodPreferences @Inject constructor(
     /** 온보딩 완료 여부 */
     val isOnboardingCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[KEY_ONBOARDING_COMPLETED] == 1L
+    }
+
+    /** 권한 건너뛰기 여부 */
+    val isPermissionSkipped: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[KEY_PERMISSION_SKIPPED] == true
     }
 
     /** 시작 날짜를 설정한다. null이면 "처음부터"를 의미한다. */
@@ -61,6 +68,14 @@ class CollectionPeriodPreferences @Inject constructor(
     suspend fun setOnboardingCompleted() {
         dataStore.edit { prefs ->
             prefs[KEY_ONBOARDING_COMPLETED] = 1L
+        }
+    }
+
+    /** 권한 건너뛰기를 설정한다. */
+    suspend fun setPermissionSkipped(skipped: Boolean) {
+        dataStore.edit { prefs ->
+            if (skipped) prefs[KEY_PERMISSION_SKIPPED] = true
+            else prefs.remove(KEY_PERMISSION_SKIPPED)
         }
     }
 
