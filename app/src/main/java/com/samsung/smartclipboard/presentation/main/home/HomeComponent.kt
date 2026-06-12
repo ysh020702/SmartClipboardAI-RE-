@@ -540,16 +540,8 @@ internal fun HomeSettingsPanel(
 
                 QuickAccessRow(
                     icon = Icons.Default.FolderOpen,
-                    title = "저장공간",
-                    description = "앱 저장 상태 확인",
+                    title = "설정",
                     onClick = { onNavigate(Screen.Storage, mapOf("from" to "homePanel")) },
-                )
-
-                QuickAccessRow(
-                    icon = Icons.Default.Work,
-                    title = "작업",
-                    description = "생성된 실행 초안 보기",
-                    onClick = { onNavigate(Screen.Tasks, mapOf("from" to "homePanel")) },
                 )
 
                 Box(
@@ -713,7 +705,6 @@ internal fun HomeDataPanel(
 internal fun QuickAccessRow(
     icon: ImageVector,
     title: String,
-    description: String,
     onClick: () -> Unit,
 ) {
     PanelPressGradientRow(onClick = onClick) {
@@ -732,11 +723,6 @@ internal fun QuickAccessRow(
                 color = AppColors.Slate800,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = description,
-                color = AppColors.Slate400,
-                fontSize = 10.sp,
             )
         }
     }
@@ -782,13 +768,6 @@ internal fun RecentTopicRowWithDelete(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(Modifier.width(8.dp))
-        Icon(
-            imageVector = Icons.Default.Delete,
-            contentDescription = "삭제",
-            tint = AppColors.Slate400,
-            modifier = Modifier.size(18.dp),
-        )
     }
 
     if (showDeleteDialog) {

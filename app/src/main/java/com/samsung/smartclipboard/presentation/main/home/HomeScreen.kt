@@ -35,6 +35,10 @@ fun HomeScreen(
         homeViewModel.handleNavData(data)
     }
 
+    LaunchedEffect(Unit) {
+        homeViewModel.importScreenShot()
+    }
+
     HomeScreenContent(
         state = homeState,
         topics = historyState.topics,
