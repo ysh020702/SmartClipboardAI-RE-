@@ -20,7 +20,7 @@ object GeminiUtils {
                     .take(length)
             }
             DataItemType.LINK -> {
-                (LinkMetadataCodec.previewText(item.extractedContent) ?: item.effectiveContent)
+                (LinkMetadataCodec.analysisText(item.extractedContent) ?: item.effectiveContent)
                     .take(length)
             }
             else -> item.effectiveContent.take(length)
