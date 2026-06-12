@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -562,6 +563,11 @@ private fun PreviewOverlay(
         Modifier
             .fillMaxSize()
             .background(AppColors.Slate900)
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = {}
+            )
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
