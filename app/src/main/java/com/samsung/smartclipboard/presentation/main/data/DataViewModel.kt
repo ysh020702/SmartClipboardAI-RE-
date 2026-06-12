@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.samsung.smartclipboard.data.source.CollectionPeriodPreferences
 import com.samsung.smartclipboard.data.source.screenshot.ScreenshotImportHandler
+import com.samsung.smartclipboard.domain.model.DataItem
+import com.samsung.smartclipboard.domain.model.DataItemType
+import com.samsung.smartclipboard.domain.model.LinkMetadataCodec
 import com.samsung.smartclipboard.domain.repository.DataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -28,6 +31,7 @@ class DataViewModel @Inject constructor(
     val uiState: StateFlow<DataUiState> = _uiState.asStateFlow()
 
     private var observeItemsJob: Job? = null
+    private val attemptedLinkMetadataIds = mutableSetOf<Long>()
 
     fun observeDataItems() {
         if (observeItemsJob?.isActive == true) return
@@ -48,6 +52,7 @@ class DataViewModel @Inject constructor(
                                     selected = state.selected.intersect(validIds),
                                 )
                             }
+                            enrichMissingLinkMetadata(items)
                         }
                 }
         }
@@ -115,6 +120,25 @@ class DataViewModel @Inject constructor(
                 }
             }.onFailure { throwable ->
                 throwable.printStackTrace()
+            }
+        }
+    }
+
+    private fun enrichMissingLinkMetadata(items: List<DataItem>) {
+        val targets = items.filter { item ->
+            item.type == DataItemType.LINK &&
+                LinkMetadataCodec.decode(item.extractedContent) == null &&
+                attemptedLinkMetadataIds.add(item.id)
+        }
+        if (targets.isEmpty()) return
+
+        viewModelScope.launch {
+            targets.forEach { item ->
+                runCatching {
+                    dataRepository.enrichLinkMetadata(item.id)
+                }.onFailure { throwable ->
+                    throwable.printStackTrace()
+                }
             }
         }
     }

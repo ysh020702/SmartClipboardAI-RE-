@@ -29,6 +29,9 @@ interface DataRepository {
     /** 링크 DataItem을 DB에 저장하고, URL 내용 추출 및 purpose 분석을 수행한다 */
     suspend fun addLink(url: String, title: String? = null, source: String? = null)
 
+    /** 기존 링크 DataItem의 OG 메타데이터를 보강한다 */
+    suspend fun enrichLinkMetadata(itemId: Long): Boolean
+
     /** 이미지/파일 DataItem을 DB에 저장하고, 이미지인 경우 OCR 추출 및 purpose 분석을 수행한다 */
     suspend fun addMedia(uri: String, mimeType: String? = null, source: String? = null)
 

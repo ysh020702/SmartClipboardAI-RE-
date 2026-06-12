@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -56,6 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -63,9 +65,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.samsung.smartclipboard.domain.model.DataItem
 import com.samsung.smartclipboard.domain.model.DataItemType
+import com.samsung.smartclipboard.domain.model.LinkMetadata
+import com.samsung.smartclipboard.domain.model.LinkMetadataCodec
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.IconBubble
-import com.samsung.smartclipboard.presentation.Pill
 import com.samsung.smartclipboard.presentation.Screen
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -338,94 +341,164 @@ private fun DataItemCard(
                     )
                 }
             ),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(
             width = if (selected) 2.dp else 1.dp,
             color = if (selected) AppColors.Blue else AppColors.Border,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 3.dp else 1.dp),
     ) {
-        Column {
+        Box {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .height(128.dp)
+                    .padding(12.dp),
+                verticalAlignment = Alignment.Top,
             ) {
-                // 선택 모드 시 체크 인디케이터
-                if (selectMode) {
-                    SelectionIndicator(checked = selected)
-                    Spacer(Modifier.width(10.dp))
-                }
-
-                // 아이콘
-                Box(
-                    Modifier
-                        .size(42.dp)
-                        .background(item.type.toSoftColor(), RoundedCornerShape(14.dp)),
-                    contentAlignment = Alignment.Center,
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(start = 4.dp, top = 3.dp, end = 12.dp, bottom = 2.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Icon(item.type.toIcon(), null, tint = item.type.toAccentColor(), modifier = Modifier.size(18.dp))
-                }
-                Spacer(Modifier.width(12.dp))
-
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Pill(item.type.toFilterLabel(), Color.White, AppColors.Blue)
-                        Spacer(Modifier.width(6.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            item.content,
-                            color = AppColors.Slate400,
-                            fontSize = 9.sp,
-                            maxLines = 1,
+                            item.bookmarkTitle(),
+                            color = AppColors.Slate800,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 19.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            item.bookmarkDescription(),
+                            color = AppColors.Slate500,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+
+                    BookmarkMetaLine(item = item)
+                }
+
+                BookmarkPreview(item = item)
+            }
+
+            if (selectMode) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp),
+                ) {
+                    SelectionIndicator(checked = selected)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookmarkMetaLine(item: DataItem) {
+    val metaText = item.bookmarkMetaText()
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .background(item.type.toSoftColor(), RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(item.type.toIcon(), null, tint = item.type.toAccentColor(), modifier = Modifier.size(12.dp))
+        }
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = metaText,
+            color = AppColors.Slate400,
+            fontSize = 10.sp,
+            lineHeight = 13.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun BookmarkPreview(item: DataItem) {
+    val linkImageUrl = item.linkMetadata()?.imageUrl
+
+    Box(
+        modifier = Modifier
+            .width(112.dp)
+            .height(104.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(item.type.toSoftColor()),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (item.isImageLikeItem() || linkImageUrl != null) {
+            AsyncImage(
+                model = linkImageUrl ?: item.content,
+                contentDescription = item.bookmarkTitle(),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(AppColors.Slate900.copy(alpha = 0.48f))
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    text = item.type.toFilterLabel(),
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(10.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(Color.White.copy(alpha = 0.82f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(item.type.toIcon(), null, tint = item.type.toAccentColor(), modifier = Modifier.size(19.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = item.bookmarkTypeLabel(),
+                    color = item.type.toAccentColor(),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val previewMeta = item.source?.takeIf { it.isNotBlank() }
+                    ?: item.mimeType?.takeIf { it.isNotBlank() }
+                if (previewMeta != null) {
                     Text(
-                        item.effectiveContent.take(40)+"...",
-                        color = AppColors.Slate800,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
+                        text = previewMeta,
+                        color = AppColors.Slate400,
+                        fontSize = 8.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(item.createdAt.formatDate(), color = AppColors.Slate400, fontSize = 9.sp)
-                }
-            }
-
-            // 이미지 썸네일 (이미지 타입인 경우)
-            if (item.isImageLikeItem()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(88.dp)
-                        .background(item.type.toSoftColor()),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AsyncImage(
-                        model = item.content,
-                        contentDescription = item.displayTitle(),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                    Box(
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(AppColors.Slate900.copy(alpha = 0.55f))
-                            .padding(horizontal = 8.dp, vertical = 5.dp),
-                    ) {
-                        Text(
-                            text = item.previewText(),
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                 }
             }
         }
@@ -606,15 +679,39 @@ private fun List<DataItem>.toFilterCounts(): Map<String, Int> {
 }
 
 private fun DataItem.displayTitle(): String {
-    return title?.takeIf { it.isNotBlank() }
+    return linkMetadata()?.title
+        ?: title?.takeIf { it.isNotBlank() }
         ?: source?.takeIf { it.isNotBlank() }
         ?: content.take(40).ifBlank { "제목 없음" }
 }
 
 private fun DataItem.previewText(): String {
+    LinkMetadataCodec.previewText(extractedContent)?.let { return it }
     return effectiveContent.replace("\n", " ").replace("\r", " ").trim().takeIf { it.isNotBlank() }
         ?: "미리볼 수 있는 내용이 없습니다."
 }
+
+private fun DataItem.bookmarkMetaText(): String {
+    val reference = source?.takeIf { it.isNotBlank() }
+        ?: mimeType?.takeIf { it.isNotBlank() }
+        ?: content.takeIf { it.isNotBlank() }
+
+    return listOfNotNull(
+        bookmarkTypeLabel(),
+        reference,
+        createdAt.formatDate(),
+    ).joinToString(" · ")
+}
+
+private fun DataItem.bookmarkTitle(): String = displayTitle()
+
+private fun DataItem.bookmarkDescription(): String = previewText()
+
+private fun DataItem.bookmarkTypeLabel(): String {
+    return type.toFilterLabel()
+}
+
+private fun DataItem.linkMetadata() = LinkMetadataCodec.decode(extractedContent)
 
 private fun DataItem.isImageLikeItem(): Boolean {
     if (type.isImageLike()) return true
@@ -667,4 +764,58 @@ private fun DataItemType.toAccentColor(): Color = when (name.uppercase()) {
 
 private fun Long.formatDate(): String {
     return SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.KOREA).format(Date(this))
+}
+
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+private fun DataItemCardPreview() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.Surface)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        DataItemCard(
+            item = DataItem(
+                id = 1L,
+                type = DataItemType.LINK,
+                content = "https://www.notion.com/ko",
+                title = "나만을 위한 AI 워크스페이스 | Notion (노션)",
+                source = "https://www.notion.com/ko",
+                mimeType = "text/html",
+                createdAt = 1_716_168_000_000L,
+                extractedContent = LinkMetadataCodec.encode(
+                    LinkMetadata(
+                        title = "나만을 위한 AI 워크스페이스 | Notion (노션)",
+                        description = "커스텀 에이전트를 구축하고, 모든 앱을 검색하고, 단순 반복 작업을 자동화하세요.",
+                        imageUrl = "https://www.notion.com/images/meta/default.png",
+                        textContent = "커스텀 에이전트를 구축하고, 모든 앱을 검색하고, 단순 반복 작업을 자동화하세요.",
+                    ),
+                ),
+            ),
+            selected = false,
+            selectMode = false,
+            onToggle = {},
+            onLongClick = {},
+            onPreview = {},
+        )
+        DataItemCard(
+            item = DataItem(
+                id = 2L,
+                type = DataItemType.SCREENSHOT,
+                content = "content://sample/screenshot.png",
+                title = "회의 자료",
+                source = "스크린샷",
+                mimeType = "image/png",
+                createdAt = 1_716_254_400_000L,
+                extractedContent = "주간 업무 보고, Q2 목표 달성률 78%, 팀별 현황 요약",
+            ),
+            selected = true,
+            selectMode = true,
+            onToggle = {},
+            onLongClick = {},
+            onPreview = {},
+        )
+    }
 }

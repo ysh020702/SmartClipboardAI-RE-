@@ -24,6 +24,19 @@ interface DataItemDao {
     @Query("UPDATE data_items SET extractedContent = :extractedContent WHERE id = :id")
     suspend fun updateExtractedContent(id: Long, extractedContent: String)
 
+    @Query(
+        """
+        UPDATE data_items
+        SET title = CASE
+            WHEN :title IS NULL OR :title = '' THEN title
+            ELSE :title
+        END,
+        extractedContent = :extractedContent
+        WHERE id = :id
+        """
+    )
+    suspend fun updateLinkMetadata(id: Long, title: String?, extractedContent: String)
+
     @Query("UPDATE data_items SET purpose = :purpose, purposeKeyword = :purposeKeyword WHERE id = :id")
     suspend fun updatePurpose(id: Long, purpose: String, purposeKeyword: String)
 
