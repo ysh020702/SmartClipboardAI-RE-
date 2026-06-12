@@ -64,11 +64,13 @@ import com.samsung.smartclipboard.presentation.main.manualdataselection.ManualDa
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = hiltViewModel(),
+    hasMediaPermission: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     MainScreenContent(
         uiState = uiState,
+        hasMediaPermission = hasMediaPermission,
         onDataSelectModeChanged = viewModel::onDataSelectModeChanged,
         onOpenAnalysisSheet = viewModel::openAnalysisSheet,
         onDismissAnalysisSheet = viewModel::dismissAnalysisSheet,
@@ -81,6 +83,7 @@ fun MainScreen(
 @Composable
 private fun MainScreenContent(
     uiState: MainUiState,
+    hasMediaPermission: Boolean = false,
     onDataSelectModeChanged: (Boolean) -> Unit,
     onOpenAnalysisSheet: (Int, String) -> Unit,
     onDismissAnalysisSheet: () -> Unit,
@@ -218,6 +221,7 @@ private fun MainScreenContent(
                             Screen.Storage -> StorageScreen(
                                 navigate = navigate,
                                 data = navData,
+                                hasMediaPermission = hasMediaPermission,
                             )
 
                             Screen.AiSuggest -> AiTopicSelectionScreen(
@@ -319,6 +323,7 @@ private fun MainScreenContent(
 private fun MainScreenHomePreview() {
     MainScreenContent(
         uiState = MainUiState(),
+        hasMediaPermission = true,
         onDataSelectModeChanged = {},
         onOpenAnalysisSheet = { _, _ -> },
         onDismissAnalysisSheet = {},

@@ -26,11 +26,18 @@ class MainActivity : ComponentActivity() {
 
     private var hasMediaPermission by mutableStateOf(false)
     private var isOnboardingCompleted by mutableStateOf(false)
+    private var permissionSkipped by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
+        if (hasMediaPermission) {
+            CoroutineScope(Dispatchers.IO).launch {
+                collectionPeriodPreferences.setPermissionSkipped(false)
+            }
+            permissionSkipped = false
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,19 +45,32 @@ class MainActivity : ComponentActivity() {
 
         hasMediaPermission = MediaPermissionHelper.hasImageReadPermission(this)
 
-        // 온보딩 완료 여부 확인
+        // 온보딩 완료 여부 및 권한 건너뛰기 여부 확인
         CoroutineScope(Dispatchers.Main).launch {
             collectionPeriodPreferences.isOnboardingCompleted.collect { completed ->
                 isOnboardingCompleted = completed
             }
         }
+        CoroutineScope(Dispatchers.Main).launch {
+            collectionPeriodPreferences.isPermissionSkipped.collect { skipped ->
+                permissionSkipped = skipped
+            }
+        }
 
         setContent {
             SmartClipboardTheme {
+                val shouldShowPermissionScreen = !hasMediaPermission && !permissionSkipped
+
                 when {
-                    !hasMediaPermission -> PermissionScreen(
+                    shouldShowPermissionScreen -> PermissionScreen(
                         onRequestPermission = {
                             requestMediaPermission()
+                        },
+                        onSkipPermission = {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                collectionPeriodPreferences.setPermissionSkipped(true)
+                            }
+                            permissionSkipped = true
                         }
                     )
 
@@ -63,7 +83,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
 
-                    else -> MainScreen()
+                    else -> MainScreen(hasMediaPermission = hasMediaPermission)
                 }
             }
         }
