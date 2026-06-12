@@ -52,10 +52,17 @@ object LinkMetadataCodec {
         }.getOrNull()
     }
 
-    fun previewText(raw: String?): String? {
+    fun displayText(raw: String?): String? {
         val metadata = decode(raw) ?: return null
         return metadata.description
             ?: metadata.textContent
+            ?: metadata.title
+    }
+
+    fun analysisText(raw: String?): String? {
+        val metadata = decode(raw) ?: return null
+        return metadata.textContent
+            ?: metadata.description
             ?: metadata.title
     }
 
