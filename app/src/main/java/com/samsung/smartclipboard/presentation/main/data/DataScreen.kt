@@ -686,7 +686,7 @@ private fun DataItem.displayTitle(): String {
 }
 
 private fun DataItem.previewText(): String {
-    LinkMetadataCodec.previewText(extractedContent)?.let { return it }
+    LinkMetadataCodec.displayText(extractedContent)?.let { return it }
     return effectiveContent.replace("\n", " ").replace("\r", " ").trim().takeIf { it.isNotBlank() }
         ?: "미리볼 수 있는 내용이 없습니다."
 }
