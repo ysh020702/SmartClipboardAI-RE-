@@ -9,6 +9,7 @@ data class LinkMetadata(
     val textContent: String? = null,
 )
 
+
 object LinkMetadataCodec {
     private const val TYPE = "smartclipboard.link_metadata.v1"
     private const val KEY_TYPE = "_type"
