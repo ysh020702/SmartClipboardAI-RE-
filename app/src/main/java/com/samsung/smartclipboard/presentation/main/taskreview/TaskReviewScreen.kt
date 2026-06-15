@@ -128,7 +128,7 @@ fun ActionReviewScreenContent(
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(config.title, color = AppColors.Slate800, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("AI 초안 · 실행 전 검토", color = AppColors.Slate400, fontSize = 10.sp)
+                    Text("AI 생성 · 실행 전 검토", color = AppColors.Slate400, fontSize = 10.sp)
                 }
             }
         }
