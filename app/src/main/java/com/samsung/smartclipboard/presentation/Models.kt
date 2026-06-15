@@ -65,7 +65,7 @@ val sampleItems = listOf(
 val actionConfigs = mapOf(
     "note" to ActionConfig(
         key = "note",
-        title = "요약 노트 초안",
+        title = "요약 노트",
         icon = Icons.Default.Description,
         color = AppColors.Blue,
         app = "삼성 노트",
@@ -80,7 +80,7 @@ val actionConfigs = mapOf(
     ),
     "calendar" to ActionConfig(
         key = "calendar",
-        title = "캘린더 일정 초안",
+        title = "일정 정보",
         icon = Icons.Default.CalendarMonth,
         color = Color(0xFF2563EB),
         app = "삼성 캘린더",
@@ -90,7 +90,7 @@ val actionConfigs = mapOf(
     ),
     "reminder" to ActionConfig(
         key = "reminder",
-        title = "리마인더 초안",
+        title = "할 일 제안",
         icon = Icons.Default.Notifications,
         color = AppColors.BlueDeep,
         app = "삼성 리마인더",
@@ -100,7 +100,7 @@ val actionConfigs = mapOf(
     ),
     "share" to ActionConfig(
         key = "share",
-        title = "공유 초안",
+        title = "공유 메시지",
         icon = Icons.Default.Share,
         color = AppColors.Slate500,
         app = "공유하기",
