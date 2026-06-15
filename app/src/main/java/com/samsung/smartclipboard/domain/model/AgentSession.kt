@@ -10,7 +10,7 @@ package com.samsung.smartclipboard.domain.model
  * @property topicTitle 사용자가 입력한 주제
  * @property state 현재 에이전트 상태 머신 상태
  * @property candidateItems 검색/추천된 후보 아이템 목록
- * @property actionDrafts 생성된 Action 초안 목록
+ * @property actionDrafts 생성된 Action 항목 목록
  * @property selectedActionIndex 사용자가 선택한 Action 인덱스
  * @property toolResults Tool 실행 결과 이력
  * @property createdAt 세션 생성 시각 (epoch millis)
