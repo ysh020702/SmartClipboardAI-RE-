@@ -119,10 +119,11 @@ class ToolExecutorImpl @Inject constructor(
         }
         return try {
             val title = payload["shareTitle"].orEmpty()
+            val deduplicatedText = removeTitlePrefixFromBody(title, shareText)
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_SUBJECT, title)
-                putExtra(Intent.EXTRA_TEXT, shareText)
+                putExtra(Intent.EXTRA_TEXT, deduplicatedText)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(intent, title.ifBlank { "공유" })
@@ -215,10 +216,11 @@ class ToolExecutorImpl @Inject constructor(
             )
         }
         return try {
+            val deduplicatedBody = removeTitlePrefixFromBody(subject, body)
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("mailto:")
                 putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, body)
+                putExtra(Intent.EXTRA_TEXT, deduplicatedBody)
                 val to = payload["to"]
                 if (!to.isNullOrBlank()) {
                     putExtra(Intent.EXTRA_EMAIL, arrayOf(to))
@@ -306,7 +308,7 @@ class ToolExecutorImpl @Inject constructor(
             )
             putExtra(
                 CalendarContract.Events.DESCRIPTION,
-                payload["eventDescription"].orEmpty()
+                removeTitlePrefixFromBody(eventTitle, payload["eventDescription"].orEmpty())
             )
             putExtra(
                 CalendarContract.EXTRA_EVENT_BEGIN_TIME,
@@ -394,17 +396,19 @@ class ToolExecutorImpl @Inject constructor(
             )
         }
 
+        val deduplicatedNoteBody = removeTitlePrefixFromBody(noteTitle, noteBody)
+
         val shareContent = buildString {
             if (noteTitle.isNotBlank()) {
                 append(noteTitle)
             }
 
-            if (noteBody.isNotBlank()) {
+            if (deduplicatedNoteBody.isNotBlank()) {
                 if (isNotEmpty()) {
                     append("\n\n")
                 }
 
-                append(noteBody)
+                append(deduplicatedNoteBody)
             }
         }
 
@@ -526,6 +530,9 @@ class ToolExecutorImpl @Inject constructor(
         val reminderDescription =
             payload["reminderDescription"].orEmpty().trim()
 
+        val deduplicatedReminderDescription =
+            removeTitlePrefixFromBody(reminderTitle, reminderDescription)
+
         val reminderTime =
             parseTimeMillis(payload["reminderTime"])
 
@@ -533,11 +540,11 @@ class ToolExecutorImpl @Inject constructor(
             if (reminderTitle.isNotBlank()) {
                 append(reminderTitle)
             }
-            if (reminderDescription.isNotBlank()) {
+            if (deduplicatedReminderDescription.isNotBlank()) {
                 if (isNotEmpty()) {
                     append("\n\n")
                 }
-                append(reminderDescription)
+                append(deduplicatedReminderDescription)
             }
         }
 
@@ -586,7 +593,7 @@ class ToolExecutorImpl @Inject constructor(
                     )
                     putExtra(
                         CalendarContract.Events.DESCRIPTION,
-                        reminderDescription
+                        deduplicatedReminderDescription
                     )
                     putExtra(
                         CalendarContract.EXTRA_EVENT_BEGIN_TIME,
@@ -707,6 +714,20 @@ class ToolExecutorImpl @Inject constructor(
                 }.parse(value)?.time
             }.getOrNull()
         }
+    }
+
+    /**
+     * 제목과 본문 앞부분이 겹칠 경우, 본문에서 제목과 일치하는 앞부분을 제거합니다.
+     * 예: title="회의록", body="회의록\n오늘 회의 내용..." → "오늘 회의 내용..."
+     */
+    private fun removeTitlePrefixFromBody(title: String, body: String): String {
+        val trimmedTitle = title.trim()
+        val trimmedBody = body.trim()
+        if (trimmedTitle.isBlank() || trimmedBody.isBlank()) return body
+        if (trimmedBody.startsWith(trimmedTitle)) {
+            return trimmedBody.removePrefix(trimmedTitle).trim()
+        }
+        return body
     }
 
     private fun newExecutionResult(
