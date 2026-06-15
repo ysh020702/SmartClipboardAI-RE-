@@ -431,7 +431,7 @@ class DataRepositoryImpl @Inject constructor(
             id = id,
             topicId = topicId,
             analysisResultId = analysisResultId,
-            type = runCatching { TaskSelectionType.valueOf(type) }.getOrDefault(TaskSelectionType.TODO),
+            type = runCatching { TaskSelectionType.valueOf(type) }.getOrDefault(TaskSelectionType.SUMMARY),
             title = title,
             body = body,
             status = runCatching { TaskSelectionStatus.valueOf(status) }.getOrDefault(TaskSelectionStatus.DRAFT),
