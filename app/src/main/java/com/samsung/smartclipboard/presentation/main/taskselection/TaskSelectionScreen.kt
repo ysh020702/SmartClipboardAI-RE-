@@ -202,7 +202,9 @@ private fun TopicActionRow(action: TaskSelectionCardUi, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.width(6.dp))
-                    Pill(action.statusLabel, action.statusColor.first, action.statusColor.second)
+                    if (action.showStatusLabel) {
+                        Pill(action.statusLabel, action.statusColor.first, action.statusColor.second)
+                    }
                 }
                 Text(
                     text = action.description,

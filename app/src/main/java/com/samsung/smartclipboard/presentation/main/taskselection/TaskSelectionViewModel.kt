@@ -34,6 +34,7 @@ data class TaskSelectionCardUi(
     val description: String,
     val statusLabel: String,
     val statusColor: Pair<Color, Color>,
+    val showStatusLabel: Boolean,
     val icon: ImageVector,
     val color: Color
 )
@@ -64,12 +65,6 @@ fun TaskSelection.toTaskSelectionCardUi(): TaskSelectionCardUi {
             icon = Icons.Default.Share,
             color = AppColors.Cyan
         )
-        TaskSelectionType.TODO -> TaskSelectionTypeUi(
-            routeActionType = "note",
-            typeLabel = "할 일",
-            icon = Icons.Default.Description,
-            color = AppColors.Green
-        )
     }
 
     return TaskSelectionCardUi(
@@ -80,6 +75,7 @@ fun TaskSelection.toTaskSelectionCardUi(): TaskSelectionCardUi {
         description = body,
         statusLabel = status.toDisplayLabel(),
         statusColor = status.toStatusColor(),
+        showStatusLabel = status == TaskSelectionStatus.EXECUTED,
         icon = typeUi.icon,
         color = typeUi.color
     )
