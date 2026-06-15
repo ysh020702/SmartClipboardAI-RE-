@@ -1,4 +1,25 @@
 <resources>
     <string name="app_name">SmartClipboard</string>
-    <string name="tile_clipboard_capture_label">Clip Save</string>
+
+    <!-- Smart Save Tile -->
+    <string name="tile_smart_save_label">스마트 저장</string>
+    <string name="tile_smart_save_saving">저장 중…</string>
+    <string name="tile_smart_save_success">저장 완료 ✓</string>
+    <string name="tile_smart_save_empty">클립보드 비어 있음</string>
+    <string name="tile_smart_save_duplicate">이미 저장됨</string>
+    <string name="tile_smart_save_failed">저장 실패</string>
+
+    <!-- Smart Save Notification -->
+    <string name="notification_channel_smart_save">스마트 저장</string>
+    <string name="notification_channel_smart_save_desc">클립보드 저장 결과 알림</string>
+    <string name="notification_text_saved_title">텍스트 저장 완료</string>
+    <string name="notification_text_saved">클립보드 텍스트가 저장되었습니다</string>
+    <string name="notification_link_saved_title">링크 저장 완료</string>
+    <string name="notification_link_saved">클립보드 링크가 저장되었습니다</string>
+    <string name="notification_empty_title">저장할 내용 없음</string>
+    <string name="notification_empty">클립보드가 비어 있습니다</string>
+    <string name="notification_duplicate_title">이미 저장된 내용</string>
+    <string name="notification_duplicate">이미 저장된 내용입니다</string>
+    <string name="notification_failed_title">저장 실패</string>
+    <string name="notification_failed">저장에 실패했습니다. 다시 시도해 주세요</string>
 </resources>
