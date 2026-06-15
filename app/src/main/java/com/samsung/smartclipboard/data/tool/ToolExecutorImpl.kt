@@ -119,11 +119,10 @@ class ToolExecutorImpl @Inject constructor(
         }
         return try {
             val title = payload["shareTitle"].orEmpty()
-            val deduplicatedText = removeTitlePrefixFromBody(title, shareText)
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_SUBJECT, title)
-                putExtra(Intent.EXTRA_TEXT, deduplicatedText)
+                putExtra(Intent.EXTRA_TEXT, shareText)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(intent, title.ifBlank { "공유" })
@@ -216,11 +215,10 @@ class ToolExecutorImpl @Inject constructor(
             )
         }
         return try {
-            val deduplicatedBody = removeTitlePrefixFromBody(subject, body)
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("mailto:")
                 putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, deduplicatedBody)
+                putExtra(Intent.EXTRA_TEXT, body)
                 val to = payload["to"]
                 if (!to.isNullOrBlank()) {
                     putExtra(Intent.EXTRA_EMAIL, arrayOf(to))
@@ -308,7 +306,7 @@ class ToolExecutorImpl @Inject constructor(
             )
             putExtra(
                 CalendarContract.Events.DESCRIPTION,
-                removeTitlePrefixFromBody(eventTitle, payload["eventDescription"].orEmpty())
+                payload["eventDescription"].orEmpty()
             )
             putExtra(
                 CalendarContract.EXTRA_EVENT_BEGIN_TIME,
@@ -396,20 +394,10 @@ class ToolExecutorImpl @Inject constructor(
             )
         }
 
-        val deduplicatedNoteBody = removeTitlePrefixFromBody(noteTitle, noteBody)
-
-        val shareContent = buildString {
-            if (noteTitle.isNotBlank()) {
-                append(noteTitle)
-            }
-
-            if (deduplicatedNoteBody.isNotBlank()) {
-                if (isNotEmpty()) {
-                    append("\n\n")
-                }
-
-                append(deduplicatedNoteBody)
-            }
+        val shareContent = if (noteBody.isNotBlank()) {
+            noteBody
+        } else {
+            noteTitle
         }
 
         /*
@@ -530,21 +518,29 @@ class ToolExecutorImpl @Inject constructor(
         val reminderDescription =
             payload["reminderDescription"].orEmpty().trim()
 
-        val deduplicatedReminderDescription =
-            removeTitlePrefixFromBody(reminderTitle, reminderDescription)
-
         val reminderTime =
             parseTimeMillis(payload["reminderTime"])
 
-        val reminderContent = buildString {
+        /*
+         * EXTRA_SUBJECT에 제목이 이미 들어가므로,
+         * EXTRA_TEXT에는 본문만 전달하여 제목 중복을 방지합니다.
+         * 알람 앱은 제목 필드가 없으므로 제목+본문을 함께 전달합니다.
+         */
+        val reminderBodyForShare = if (reminderDescription.isNotBlank()) {
+            reminderDescription
+        } else {
+            reminderTitle
+        }
+
+        val reminderBodyForAlarm = buildString {
             if (reminderTitle.isNotBlank()) {
                 append(reminderTitle)
             }
-            if (deduplicatedReminderDescription.isNotBlank()) {
+            if (reminderDescription.isNotBlank()) {
                 if (isNotEmpty()) {
                     append("\n\n")
                 }
-                append(deduplicatedReminderDescription)
+                append(reminderDescription)
             }
         }
 
@@ -555,7 +551,7 @@ class ToolExecutorImpl @Inject constructor(
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_SUBJECT, reminderTitle)
-                putExtra(Intent.EXTRA_TEXT, reminderContent)
+                putExtra(Intent.EXTRA_TEXT, reminderBodyForShare)
                 setPackage(PKG_SAMSUNG_REMINDER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -593,7 +589,7 @@ class ToolExecutorImpl @Inject constructor(
                     )
                     putExtra(
                         CalendarContract.Events.DESCRIPTION,
-                        deduplicatedReminderDescription
+                        reminderDescription
                     )
                     putExtra(
                         CalendarContract.EXTRA_EVENT_BEGIN_TIME,
@@ -635,7 +631,7 @@ class ToolExecutorImpl @Inject constructor(
                 Intent(AlarmClock.ACTION_SET_ALARM).apply {
                     putExtra(
                         AlarmClock.EXTRA_MESSAGE,
-                        reminderContent
+                        reminderBodyForAlarm
                     )
 
                     reminderTime?.let { time ->
@@ -714,20 +710,6 @@ class ToolExecutorImpl @Inject constructor(
                 }.parse(value)?.time
             }.getOrNull()
         }
-    }
-
-    /**
-     * 제목과 본문 앞부분이 겹칠 경우, 본문에서 제목과 일치하는 앞부분을 제거합니다.
-     * 예: title="회의록", body="회의록\n오늘 회의 내용..." → "오늘 회의 내용..."
-     */
-    private fun removeTitlePrefixFromBody(title: String, body: String): String {
-        val trimmedTitle = title.trim()
-        val trimmedBody = body.trim()
-        if (trimmedTitle.isBlank() || trimmedBody.isBlank()) return body
-        if (trimmedBody.startsWith(trimmedTitle)) {
-            return trimmedBody.removePrefix(trimmedTitle).trim()
-        }
-        return body
     }
 
     private fun newExecutionResult(
