@@ -90,7 +90,8 @@ class GeminiTaskAgent @Inject constructor(
         - title, body, reason은 한국어로 자연스럽게 작성한다.
         - body는 사용자가 바로 복사하거나 편집하여 사용할 수 있는 '완성된 초안' 수준으로 작성한다.
         - 개인정보, URL, 주소, 연락처 등 민감한 값을 불필요하게 그대로 재출력하지 말고, 필요시 [OOO] 형태로 마스킹 처리한다.
-        - Action은 최소 1개에서 최대 5개까지만 생성한다.
+        - Action은 최소 3개에서 최대 5개까지 생성한다.
+        - **가능하면 SUMMARY, CALENDAR, REMINDER, SHARE_DRAFT 각 종류별로 최소 1개 이상의 Action을 생성하라.** 자료에 근거가 있다면 모든 종류를 포함하는 것을 권장한다.
         - **주제(Topic)의 의도를 최우선으로 반영하여 Action을 생성하라.** 단순히 자료를 요약하는 것이 아니라, 주제가 요구하는 방향과 목적에 맞는 Action을 도출해야 한다.
         - summary와 keyPoints도 주제의 관점에서 자료를 해석한 내용이어야 한다.
 
@@ -111,7 +112,7 @@ class GeminiTaskAgent @Inject constructor(
           "sourceItemIds": [전체 분석에 사용된 id 배열],
           "recommendedActions": [
             {
-              "type": "SUMMARY|CALENDAR|REMINDER|TODO|SHARE_DRAFT",
+              "type": "SUMMARY|CALENDAR|REMINDER|SHARE_DRAFT",
               "confidence": 0.95,
               "reason": "이 액션을 추천하는 이유 (한국어 1문장)",
               "title": "Action의 직관적인 짧은 제목",
@@ -129,8 +130,6 @@ class GeminiTaskAgent @Inject constructor(
           → payload: {"app":"CALENDAR", "eventTitle":"...", "eventDescription":"...", "startTime":"2026-05-30T14:00:00+09:00", "endTime":"...", "location":null, "sourceItemIds":[...], "needsUserInput":["startTime"]} (불확실한 정보가 있다면 needsUserInput에 필드명 추가)
         - REMINDER: 마감일, 제출, 준비물, 연락 등 잊지 말아야 할 후속 행동이 있을 때
           → payload: {"app":"REMINDER", "reminderTitle":"...", "reminderBody":"...", "dueTime":"2026-05-31T09:00:00+09:00", "sourceItemIds":[...], "needsUserInput":[]}
-        - TODO: 해야 할 일 목록이 명확하나 캘린더/리마인더로 특정하기 어려울 때
-          → payload: {"app":"INTERNAL_TODO", "tasks":[{"title":"...", "description":"...", "sourceItemIds":[...]}], "needsUserInput":[]}
         - SHARE_DRAFT: 누군가에게 전달할 메시지, 이메일, 보고서 초안 작성이 자연스러울 때
           → payload: {"app":"SHARE", "shareTitle":"...", "shareText":"...", "sourceItemIds":[...], "needsUserInput":[]}
     """.trimIndent()
