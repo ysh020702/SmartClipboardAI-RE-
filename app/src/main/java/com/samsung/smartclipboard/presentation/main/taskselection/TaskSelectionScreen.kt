@@ -107,7 +107,7 @@ fun TaskSelectionScreen(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "AI가 실행 초안 ${uiState.actionCount}개를 생성했어요",
+                        text = "AI가 실행 항목 ${uiState.actionCount}개를 생성했어요",
                         color = AppColors.Slate400,
                         fontSize = 10.sp,
                     )
@@ -117,7 +117,7 @@ fun TaskSelectionScreen(
 
         item {
             Text(
-                text = "실행하기 전에 초안을 확인하세요",
+                text = "실행하기 전에 항목을 확인하세요",
                 color = AppColors.Slate500,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -126,13 +126,13 @@ fun TaskSelectionScreen(
 
         when {
             uiState.isLoading -> item {
-                TopicSelectionMessage("실행 초안을 불러오는 중입니다")
+                TopicSelectionMessage("실행 항목을 불러오는 중입니다")
             }
             uiState.errorMessage != null -> item {
                 TopicSelectionMessage(uiState.errorMessage.orEmpty())
             }
             uiState.actions.isEmpty() -> item {
-                TopicSelectionMessage("생성된 초안이 없습니다")
+                TopicSelectionMessage("생성된 항목이 없습니다")
             }
         }
 
