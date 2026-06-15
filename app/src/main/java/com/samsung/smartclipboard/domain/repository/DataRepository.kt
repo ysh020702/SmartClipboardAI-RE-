@@ -20,7 +20,7 @@ interface DataRepository {
     /** 특정 Topic의 분석 결과들을 Flow로 관찰하여 반환한다 */
     fun observeTopicAnalysis(topicId: Long): Flow<List<TopicAnalysis>>
 
-    /** 특정 Topic의 액션 초안들을 Flow로 관찰하여 반환한다 */
+    /** 특정 Topic의 액션 항목들을 Flow로 관찰하여 반환한다 */
     fun observeTopicActions(topicId: Long): Flow<List<TaskSelection>>
 
     /** 텍스트 DataItem을 DB에 저장하고 purpose 분석을 수행한다 */
@@ -56,10 +56,10 @@ interface DataRepository {
     /** 아이템들을 Topic에 추가하고, Topic이 없으면 새로 생성하여 Topic ID를 반환한다 */
     suspend fun addItemsToTopic(title: String, itemIds: List<Long>, addedBy: String = "USER"): Long
 
-    /** Topic에 속한 아이템들을 Gemini로 분석하고, 분석 결과와 액션 초안을 DB에 저장한다 */
+    /** Topic에 속한 아이템들을 Gemini로 분석하고, 분석 결과와 액션 항목을 DB에 저장한다 */
     suspend fun runTopicAnalysis(topicId: Long): Boolean
 
-    /** TopicAction 초안의 제목과 본문을 수정하고 상태를 EDITED로 변경한다 */
+    /** TopicAction 항목의 제목과 본문을 수정하고 상태를 EDITED로 변경한다 */
     suspend fun updateTopicActionDraft(actionId: Long, title: String, body: String)
 
     /** purpose가 없는 DataItem들에 대해 Gemini 기반 purpose 분석을 수행하고 DB를 업데이트한다 */
