@@ -3,6 +3,8 @@ package com.samsung.smartclipboard.presentation.main.taskreview
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.samsung.smartclipboard.data.export.PdfExportManager
+import com.samsung.smartclipboard.data.export.PdfSection
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 enum class QuickRefineTask(val label: String, val feedback: String) {
     MORE_CONCISE("더 간결하게", "더 간결하고 짧게 만들어줘. 불필요한 설명은 빼고 핵심만 남겨줘."),
@@ -49,7 +52,7 @@ data class TaskReviewUiState(
     val isRefining: Boolean = false,
     val isExecuted: Boolean = false,
     val isExecuting: Boolean = false,
-
+    val isGeneratingPdf: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 
@@ -76,6 +79,8 @@ sealed interface TaskReviewIntent {
 
     data object ConfirmExecution : TaskReviewIntent
     data object DismissError : TaskReviewIntent
+
+    data object SharePdf : TaskReviewIntent
 }
 
 @HiltViewModel
@@ -83,7 +88,8 @@ class TaskReviewViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val refineAgent: GeminiRefineAgent,
     private val toolRouter: ToolRouter,
-    private val toolExecutor: ToolExecutor
+    private val toolExecutor: ToolExecutor,
+    private val pdfExportManager: PdfExportManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TaskReviewUiState())
@@ -101,6 +107,7 @@ class TaskReviewViewModel @Inject constructor(
             is TaskReviewIntent.ToggleEditMode -> toggleEditMode()
             is TaskReviewIntent.RefineFeedbackChanged -> onRefineFeedbackChanged(intent.feedback)
             is TaskReviewIntent.StartRefinement -> startRefinement()
+            is TaskReviewIntent.SharePdf -> shareCurrentDraftAsPdf()
             is TaskReviewIntent.QuickRefine -> onQuickRefine(intent.action)
             is TaskReviewIntent.CancelRefinement -> onCancelRefinement()
             is TaskReviewIntent.RevertToVersion -> revertToVersion(intent.version)
@@ -399,7 +406,99 @@ class TaskReviewViewModel @Inject constructor(
 
     private fun setFailed(step: String, message: String) {
         _uiState.update {
-            it.copy(isRefining = false, isLoading = false, isExecuting = false, errorMessage = message)
+            it.copy(
+                isRefining = false,
+                isLoading = false,
+                isExecuting = false,
+                isGeneratingPdf = false,
+                errorMessage = message
+            )
+        }
+    }
+
+    private fun shareCurrentDraftAsPdf() {
+        val state = _uiState.value
+
+        if (
+            state.isGeneratingPdf ||
+            state.isExecuting ||
+            state.isRefining
+        ) {
+            return
+        }
+
+        if (
+            state.title.isBlank() &&
+            state.body.isBlank()
+        ) {
+            _uiState.update {
+                it.copy(
+                    errorMessage =
+                        "PDF로 만들 내용이 없습니다."
+                )
+            }
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                isGeneratingPdf = true,
+                errorMessage = null
+            )
+        }
+
+        viewModelScope.launch {
+            val generateResult =
+                pdfExportManager.generatePdf(
+                    fileName =
+                        "${state.topicTitle}_${state.title}",
+                    reportTitle =
+                        state.topicTitle.ifBlank {
+                            "그때그거 AI 작업 초안"
+                        },
+                    sections = listOf(
+                        PdfSection(
+                            title =
+                                state.title.ifBlank {
+                                    "작업 초안"
+                                },
+                            content = state.body
+                        )
+                    )
+                )
+
+            val pdfUri =
+                generateResult.getOrElse { error ->
+                    setFailed(
+                        step = "pdf_generate",
+                        message =
+                            "PDF 생성에 실패했습니다: " +
+                                    (
+                                            error.message
+                                                ?: "알 수 없는 오류"
+                                            )
+                    )
+                    return@launch
+                }
+
+            val shareResult =
+                pdfExportManager.sharePdf(pdfUri)
+
+            if (shareResult.isFailure) {
+                setFailed(
+                    step = "pdf_share",
+                    message =
+                        "PDF 공유 화면을 열지 못했습니다."
+                )
+                return@launch
+            }
+
+            _uiState.update {
+                it.copy(
+                    isGeneratingPdf = false,
+                    errorMessage = null
+                )
+            }
         }
     }
 }

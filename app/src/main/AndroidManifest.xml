@@ -10,6 +10,11 @@
         android:maxSdkVersion="32" />
 
     <queries>
+        <package android:name="com.samsung.android.app.notes" />
+        <package android:name="com.samsung.android.calendar" />
+        <package android:name="com.samsung.android.app.calendar" />
+        <package android:name="com.samsung.android.app.reminder" />
+
         <!-- Calendar apps (Samsung Calendar, Google Calendar, etc.) -->
         <intent>
             <action android:name="android.intent.action.INSERT" />
@@ -136,6 +141,18 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
         </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+
+        </provider>
     </application>
 
 </manifest>

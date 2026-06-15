@@ -64,7 +64,7 @@ class ToolRegistryImpl : ToolRegistry {
         ),
         ToolSpec(
             toolName = "insert_calendar_event",
-            description = "캘린더 앱에 일정 초안 생성 (삼성 캘린더 등)",
+            description = "삼성 캘린더 일정 작성 화면을 우선 실행하고 기본 캘린더로 폴백",
             riskLevel = ToolRiskLevel.MEDIUM,
             requiresConfirmation = true,
             androidAction = "android.intent.action.INSERT",
@@ -78,7 +78,7 @@ class ToolRegistryImpl : ToolRegistry {
         ),
         ToolSpec(
             toolName = "save_note_share",
-            description = "공유 시트로 노트 앱에 전달 (삼성 노트 등)",
+            description = "삼성 노트로 직접 전달하고, 미설치 시 공유 시트로 폴백",
             riskLevel = ToolRiskLevel.LOW,
             requiresConfirmation = true,
             androidAction = "android.intent.action.SEND",
@@ -89,7 +89,7 @@ class ToolRegistryImpl : ToolRegistry {
         ),
         ToolSpec(
             toolName = "set_reminder",
-            description = "리마인더/알람 앱에 알림 초안 생성",
+            description = "삼성 리마인더를 우선 실행하고 캘린더 또는 알람으로 폴백",
             riskLevel = ToolRiskLevel.MEDIUM,
             requiresConfirmation = true,
             androidAction = "android.intent.action.INSERT",
