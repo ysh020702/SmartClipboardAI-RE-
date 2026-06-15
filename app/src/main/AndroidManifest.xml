@@ -118,16 +118,16 @@
         </activity>
 
         <activity
-            android:name=".presentation.clipboard.ClipboardCaptureActivity"
+            android:name=".presentation.clipboard.SmartSaveActivity"
             android:exported="false"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.SmartClipboard.Transparent" />
 
         <service
-            android:name=".presentation.tile.ClipboardCaptureTileService"
+            android:name=".presentation.tile.SmartSaveTileService"
             android:exported="true"
-            android:label="@string/tile_clipboard_capture_label"
-            android:icon="@drawable/ic_qs_clipboard"
+            android:label="@string/tile_smart_save_label"
+            android:icon="@drawable/ic_qs_smart_save"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
