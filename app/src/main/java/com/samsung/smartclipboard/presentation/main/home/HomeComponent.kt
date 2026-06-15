@@ -43,7 +43,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Work
-import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.AlertDialog
@@ -553,8 +553,9 @@ internal fun HomeSettingsPanel(
                 Spacer(Modifier.height(28.dp))
 
                 QuickAccessRow(
-                    icon = Icons.Default.FolderOpen,
+                    icon = Icons.Default.Settings,
                     title = "설정",
+                    subtitle = "수집 기간 · 권한 관리 · 데이터 관리자",
                     onClick = {
                         navigateAfterPanelDismiss(
                             Screen.Storage,
@@ -633,8 +634,8 @@ internal fun HomeSettingsPanel(
                         ) {
                             Text(
                                 text = "최근",
-                                color = AppColors.Slate500,
-                                fontSize = 13.sp,
+                                color = AppColors.Slate800,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                             )
                             Spacer(Modifier.weight(1f))
@@ -645,7 +646,7 @@ internal fun HomeSettingsPanel(
                             )
                         }
 
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(12.dp))
 
                         LazyColumn(
                             contentPadding = PaddingValues(bottom = 32.dp),
@@ -724,6 +725,7 @@ internal fun HomeDataPanel(
 internal fun QuickAccessRow(
     icon: ImageVector,
     title: String,
+    subtitle: String? = null,
     onClick: () -> Unit,
 ) {
     PanelPressGradientRow(onClick = onClick) {
@@ -731,18 +733,29 @@ internal fun QuickAccessRow(
             imageVector = icon,
             contentDescription = null,
             tint = AppColors.IconSecondary,
-            modifier = Modifier.size(19.dp),
+            modifier = Modifier.size(28.dp),
         )
 
-        Spacer(Modifier.size(12.dp))
+        Spacer(Modifier.size(10.dp))
 
         Column(Modifier.weight(1f)) {
             Text(
                 text = title,
                 color = AppColors.Slate800,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
             )
+
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    color = AppColors.Slate400,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -871,7 +884,7 @@ internal fun PanelPressGradientRow(
                     },
                 )
             }
-            .padding(horizontal = 22.dp, vertical = 10.dp),
+            .padding(horizontal = 28.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         content = content,
     )
