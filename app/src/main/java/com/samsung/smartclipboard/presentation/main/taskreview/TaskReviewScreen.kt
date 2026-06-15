@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,6 +59,8 @@ import com.samsung.smartclipboard.presentation.FieldBlock
 import com.samsung.smartclipboard.presentation.ReadOnlyBox
 import com.samsung.smartclipboard.presentation.Screen
 import com.samsung.smartclipboard.presentation.actionConfigs
+
+
 
 @Composable
 fun TaskReviewScreen(
@@ -159,6 +162,37 @@ fun ActionReviewScreenContent(
                 Column(Modifier.weight(1f)) {
                     Text(config.title, color = AppColors.Slate800, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                     Text("AI 초안 · 실행 전 검토", color = AppColors.Slate400, fontSize = 10.sp)
+                }
+            }
+        }
+
+        uiState.errorMessage?.let { message ->
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onIntent(
+                                TaskReviewIntent.DismissError
+                            )
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor =
+                            Color(0xFFFFF1F2)
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        Color(0xFFFDA4AF)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(14.dp),
+                        color = Color(0xFFBE123C),
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp
+                    )
                 }
             }
         }
@@ -381,6 +415,63 @@ fun ActionReviewScreenContent(
                         Spacer(Modifier.width(6.dp))
                         Text("실행", fontWeight = FontWeight.Bold)
                     }
+                }
+            }
+        }
+
+        item {
+            Button(
+                onClick = {
+                    onIntent(TaskReviewIntent.SharePdf)
+                },
+                enabled =
+                    !uiState.isEditing &&
+                            !uiState.isRefining &&
+                            !uiState.isExecuting &&
+                            !uiState.isGeneratingPdf,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = config.color,
+                    disabledContainerColor =
+                        AppColors.Slate200,
+                    disabledContentColor =
+                        AppColors.Slate400
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    config.color.copy(alpha = 0.24f)
+                )
+            ) {
+                if (uiState.isGeneratingPdf) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(17.dp),
+                        color = config.color,
+                        strokeWidth = 2.dp
+                    )
+
+                    Spacer(Modifier.width(7.dp))
+
+                    Text(
+                        "PDF 생성 중...",
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.PictureAsPdf,
+                        contentDescription = null,
+                        modifier = Modifier.size(17.dp)
+                    )
+
+                    Spacer(Modifier.width(7.dp))
+
+                    Text(
+                        "PDF로 공유",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
