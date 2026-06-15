@@ -64,7 +64,7 @@ class GeminiActionPlannerJsonParserTest {
       "confidence": 0.88,
       "reason": "요약",
       "title": "요약 작업",
-      "body": "요약 초안",
+      "body": "요약 내용",
       "payload": {},
       "sourceItemIds": [1]
     }
