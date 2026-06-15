@@ -82,6 +82,11 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import com.samsung.smartclipboard.R
+import com.samsung.smartclipboard.presentation.BrandNameFontFamily
+import com.samsung.smartclipboard.presentation.BrandNameGradient
 import com.samsung.smartclipboard.presentation.AppColors
 import com.samsung.smartclipboard.presentation.BlueGradient
 import com.samsung.smartclipboard.presentation.DarkGradient
@@ -356,10 +361,13 @@ internal fun HomeHeroHeader() {
         Spacer(Modifier.height(14.dp))
 
         Text(
-            text = "SmartClipboardAI",
-            color = AppColors.Slate800,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.ExtraBold
+            text = stringResource(R.string.brand_name),
+            style = TextStyle(
+                brush = BrandNameGradient,
+                fontFamily = BrandNameFontFamily,
+                fontSize = 52.sp,
+                letterSpacing = (1.2).sp,
+            ),
         )
 
         Text(
