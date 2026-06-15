@@ -71,7 +71,6 @@ private fun TaskSelectionType.toActionTypeUi(): ActionTypeUi = when (this) {
     TaskSelectionType.CALENDAR -> ActionTypeUi("calendar", "캘린더", Icons.Default.CalendarMonth, Color(0xFF2563EB))
     TaskSelectionType.REMINDER -> ActionTypeUi("reminder", "리마인더", Icons.Default.Notifications, AppColors.BlueDeep)
     TaskSelectionType.SHARE_DRAFT -> ActionTypeUi("share", "공유", Icons.Default.Share, AppColors.Cyan)
-    TaskSelectionType.TODO -> ActionTypeUi("note", "할 일", Icons.Default.Description, AppColors.Green)
 }
 
 private fun TaskSelectionStatus.toDisplayLabel(): String = when (this) {
