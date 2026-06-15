@@ -29,7 +29,7 @@ class TopicSelectionUiStateTest {
             topicId = 3L,
             analysisResultId = 2L,
             type = TopicActionType.CALENDAR,
-            title = "일정 초안",
+            title = "일정 정보",
             body = "6월 10일 미팅을 추가해요.",
             status = TopicActionStatus.DRAFT,
             editablePayload = null,
@@ -42,8 +42,8 @@ class TopicSelectionUiStateTest {
         assertEquals(7L, card.actionId)
         assertEquals("calendar", card.routeActionType)
         assertEquals("캘린더", card.typeLabel)
-        assertEquals("초안", card.statusLabel)
-        assertEquals("일정 초안", card.title)
+        assertEquals("대기", card.statusLabel)
+        assertEquals("일정 정보", card.title)
         assertEquals("6월 10일 미팅을 추가해요.", card.description)
     }
 }
