@@ -100,10 +100,12 @@ class ToolRouterImpl(
     ): Map<String, String> {
         val combinedText = "${action.title}\n\n${action.body}".trim()
         return when (toolName) {
-            "copy_to_clipboard" -> mapOf("textToCopy" to capText(combinedText, 10000))
+            "copy_to_clipboard" -> mapOf(
+                "textToCopy" to capText(combinedText, 10000)
+            )
             "share_text" -> mapOf(
                 "shareTitle" to capText(action.title, 200),
-                "shareText" to capText(action.body.ifBlank { action.title }, 10000)
+                "shareText" to capText(combinedText, 10000)
             )
             "open_url" -> {
                 val url = parsedPayload["url"]
@@ -112,28 +114,16 @@ class ToolRouterImpl(
             }
             "compose_email" -> mapOf(
                 "to" to parsedPayload["to"].orEmpty(),
-                "subject" to capText(parsedPayload["subject"] ?: action.title, 200),
-                "body" to capText(parsedPayload["body"] ?: action.body, 10000)
+                "subject" to capText(action.title, 200),
+                "body" to capText(action.body, 10000)
             )
             "save_note" -> mapOf(
                 "noteTitle" to capText(action.title, 200),
                 "noteBody" to capText(action.body, 10000)
             )
             "insert_calendar_event" -> mapOf(
-                "eventTitle" to capText(
-                    firstNonBlank(
-                        parsedPayload["eventTitle"],
-                        action.title
-                    ),
-                    200
-                ),
-                "eventDescription" to capText(
-                    firstNonBlank(
-                        parsedPayload["eventDescription"],
-                        action.body
-                    ),
-                    10_000
-                ),
+                "eventTitle" to capText(action.title, 200),
+                "eventDescription" to capText(action.body, 10000),
                 "eventBeginTime" to firstNonBlank(
                     parsedPayload["eventBeginTime"],
                     parsedPayload["startTime"]
@@ -155,25 +145,12 @@ class ToolRouterImpl(
                 )
             )
             "save_note_share" -> mapOf(
-                "noteTitle" to capText(parsedPayload["noteTitle"] ?: action.title, 200),
-                "noteBody" to capText(parsedPayload["noteBody"] ?: action.body, 10000)
+                "noteTitle" to capText(action.title, 200),
+                "noteBody" to capText(action.body, 10000)
             )
             "set_reminder" -> mapOf(
-                "reminderTitle" to capText(
-                    firstNonBlank(
-                        parsedPayload["reminderTitle"],
-                        action.title
-                    ),
-                    200
-                ),
-                "reminderDescription" to capText(
-                    firstNonBlank(
-                        parsedPayload["reminderDescription"],
-                        parsedPayload["reminderBody"],
-                        action.body
-                    ),
-                    10_000
-                ),
+                "reminderTitle" to capText(action.title, 200),
+                "reminderDescription" to capText(action.body, 10000),
                 "reminderTime" to firstNonBlank(
                     parsedPayload["reminderTime"],
                     parsedPayload["dueTime"]

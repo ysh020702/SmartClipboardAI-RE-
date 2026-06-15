@@ -530,10 +530,13 @@ class ToolExecutorImpl @Inject constructor(
             parseTimeMillis(payload["reminderTime"])
 
         val reminderContent = buildString {
-            append(reminderTitle)
-
+            if (reminderTitle.isNotBlank()) {
+                append(reminderTitle)
+            }
             if (reminderDescription.isNotBlank()) {
-                append("\n\n")
+                if (isNotEmpty()) {
+                    append("\n\n")
+                }
                 append(reminderDescription)
             }
         }

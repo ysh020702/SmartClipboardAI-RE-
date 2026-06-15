@@ -84,7 +84,7 @@ class ToolRegistryImpl : ToolRegistry {
             androidAction = "android.intent.action.SEND",
             requiredInputs = listOf(
                 RequiredInput(key = "noteTitle", label = "노트 제목", required = true),
-                RequiredInput(key = "noteBody", label = "노트 내용", required = true)
+                RequiredInput(key = "noteBody", label = "노트 내용", required = false)
             )
         ),
         ToolSpec(
