@@ -41,7 +41,7 @@ class ToolRegistryImpl : ToolRegistry {
         ),
         ToolSpec(
             toolName = "compose_email",
-            description = "이메일 앱에서 초안 작성",
+            description = "이메일 앱에서 메일 작성",
             riskLevel = ToolRiskLevel.MEDIUM,
             requiresConfirmation = true,
             androidAction = "android.intent.action.SENDTO",

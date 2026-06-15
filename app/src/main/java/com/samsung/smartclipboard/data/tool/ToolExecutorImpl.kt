@@ -614,7 +614,7 @@ class ToolExecutorImpl @Inject constructor(
                     sessionId,
                     toolSpec,
                     true,
-                    "캘린더에 리마인더 일정 초안이 열렸습니다."
+                    "캘린더에 리마인더 일정 정보가 열렸습니다."
                 )
             } catch (_: Exception) {
                 // 알람 앱 폴백
