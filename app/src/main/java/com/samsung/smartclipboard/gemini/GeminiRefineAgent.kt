@@ -73,7 +73,7 @@ class GeminiRefineAgent(
         - markdown 코드 펜스, 설명문, 주석을 절대 포함하지 마라.
         - 새 DataItem을 만들지 마라.
         - 아래 sourceItemId 목록 외의 id를 절대 반환하지 마라.
-        - body는 사용자가 편집 가능한 초안 수준으로 작성해라.
+        - body는 사용자가 편집 가능한 결과 수준으로 작성해라.
         - 개인정보, URL, 주소, 연락처 등 민감한 값을 불필요하게 그대로 재출력하지 마라.
 
         ## 퀵 액션 피드백 처리 규칙
@@ -109,7 +109,7 @@ class GeminiRefineAgent(
         - confidence: 0.0~1.0
         - reason: 무조건 한국어 1문장 (작업 수행 이유 설명)
         - title: 피드백 및 현재 언어(컨텍스트)가 반영된 짧은 제목
-        - body: 피드백 및 현재 언어(컨텍스트)가 반영된 편집 가능한 초안
+        - body: 피드백 및 현재 언어(컨텍스트)가 반영된 편집 가능한 결과
         - payload: JSON object, 없으면 {}
         - sourceItemIds: 위 목록에 있는 id만 사용
 
@@ -161,7 +161,7 @@ class GeminiRefineAgent(
             val confidence = actionObj["confidence"]?.jsonPrimitive?.content?.toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.5f
             val reason = actionObj["reason"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() } ?: "선택된 아이템을 기반으로 생성된 작업 후보입니다."
             val title = actionObj["title"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() }?.take(100) ?: "${type.name} 작업"
-            val body = actionObj["body"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() } ?: "선택된 데이터를 기반으로 한 초안입니다."
+            val body = actionObj["body"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() } ?: "선택된 데이터를 기반으로 한 결과입니다."
 
             val parsedSourceIds = (actionObj["sourceItemIds"] as? JsonArray)
                 ?.mapNotNull { it.jsonPrimitive.content.toLongOrNull() ?: it.jsonPrimitive.content.toDoubleOrNull()?.toLong() }
