@@ -50,7 +50,6 @@ data class TaskReviewUiState(
     val isEditing: Boolean = false,
     val refineInput: String = "",
     val isRefining: Boolean = false,
-    val isExecuted: Boolean = false,
     val isExecuting: Boolean = false,
     val isGeneratingPdf: Boolean = false,
     val isLoading: Boolean = false,
@@ -214,8 +213,7 @@ class TaskReviewViewModel @Inject constructor(
                             currentVersion = 1,
                             parentVersion = 0,
                             history = listOf(initialVersion),
-                            isLoading = false,
-                            isExecuted = action.status == TaskSelectionStatus.EXECUTED
+                            isLoading = false
                         )
                     }
                 } else {
@@ -394,7 +392,7 @@ class TaskReviewViewModel @Inject constructor(
                     currentActionId?.let { id ->
                         dataRepository.updateActionStatus(id, TaskSelectionStatus.EXECUTED)
                     }
-                    _uiState.update { it.copy(isExecuting = false, isExecuted = true) }
+                    _uiState.update { it.copy(isExecuting = false) }
                 } else {
                     setFailed("execute", executionResult.message)
                 }
