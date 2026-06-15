@@ -793,7 +793,7 @@ internal fun RecentTopicRowWithDelete(
             )
 
             Text(
-                text = "${topic.date} · 데이터 ${topic.dataCount}개 · 초안 ${topic.drafts.size}개",
+                text = "${topic.date} · 데이터 ${topic.dataCount}개 · 항목 ${topic.drafts.size}개",
                 color = AppColors.Slate400,
                 fontSize = 11.sp,
                 maxLines = 1,
