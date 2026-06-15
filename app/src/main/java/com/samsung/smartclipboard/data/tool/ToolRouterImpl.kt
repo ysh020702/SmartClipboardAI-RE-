@@ -7,8 +7,9 @@ import com.samsung.smartclipboard.domain.tool.ToolRegistry
 import com.samsung.smartclipboard.domain.tool.ToolRouteResult
 import com.samsung.smartclipboard.domain.tool.ToolRouter
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 class ToolRouterImpl(
     private val toolRegistry: ToolRegistry
@@ -51,9 +52,23 @@ class ToolRouterImpl(
 
     private fun tryParseJsonObject(jsonStr: String): Map<String, String> {
         return try {
-            val j = Json { ignoreUnknownKeys = true; isLenient = true }
-            val obj = j.parseToJsonElement(jsonStr).jsonObject
-            obj.mapValues { it.value.jsonPrimitive.content }
+            val json = Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+            }
+
+            val obj = json.parseToJsonElement(jsonStr).jsonObject
+
+            obj.mapNotNull { (key, value) ->
+                if (value === JsonNull) {
+                    return@mapNotNull null
+                }
+
+                val primitive = value as? JsonPrimitive
+                    ?: return@mapNotNull null
+
+                key to primitive.content
+            }.toMap()
         } catch (_: Exception) {
             mapOf("payload" to jsonStr)
         }
@@ -105,20 +120,64 @@ class ToolRouterImpl(
                 "noteBody" to capText(action.body, 10000)
             )
             "insert_calendar_event" -> mapOf(
-                "eventTitle" to capText(parsedPayload["eventTitle"] ?: action.title, 200),
-                "eventDescription" to capText(parsedPayload["eventDescription"] ?: action.body, 10000),
-                "eventBeginTime" to parsedPayload["eventBeginTime"].orEmpty(),
-                "eventEndTime" to parsedPayload["eventEndTime"].orEmpty(),
-                "eventLocation" to capText(parsedPayload["eventLocation"].orEmpty(), 200)
+                "eventTitle" to capText(
+                    firstNonBlank(
+                        parsedPayload["eventTitle"],
+                        action.title
+                    ),
+                    200
+                ),
+                "eventDescription" to capText(
+                    firstNonBlank(
+                        parsedPayload["eventDescription"],
+                        action.body
+                    ),
+                    10_000
+                ),
+                "eventBeginTime" to firstNonBlank(
+                    parsedPayload["eventBeginTime"],
+                    parsedPayload["startTime"]
+                ),
+                "eventEndTime" to firstNonBlank(
+                    parsedPayload["eventEndTime"],
+                    parsedPayload["endTime"]
+                ),
+                "eventLocation" to capText(
+                    firstNonBlank(
+                        parsedPayload["eventLocation"],
+                        parsedPayload["location"]
+                    ),
+                    200
+                ),
+                "isAllDay" to firstNonBlank(
+                    parsedPayload["isAllDay"],
+                    "false"
+                )
             )
             "save_note_share" -> mapOf(
                 "noteTitle" to capText(parsedPayload["noteTitle"] ?: action.title, 200),
                 "noteBody" to capText(parsedPayload["noteBody"] ?: action.body, 10000)
             )
             "set_reminder" -> mapOf(
-                "reminderTitle" to capText(parsedPayload["reminderTitle"] ?: action.title, 200),
-                "reminderDescription" to capText(parsedPayload["reminderDescription"] ?: action.body, 10000),
-                "reminderTime" to parsedPayload["reminderTime"].orEmpty()
+                "reminderTitle" to capText(
+                    firstNonBlank(
+                        parsedPayload["reminderTitle"],
+                        action.title
+                    ),
+                    200
+                ),
+                "reminderDescription" to capText(
+                    firstNonBlank(
+                        parsedPayload["reminderDescription"],
+                        parsedPayload["reminderBody"],
+                        action.body
+                    ),
+                    10_000
+                ),
+                "reminderTime" to firstNonBlank(
+                    parsedPayload["reminderTime"],
+                    parsedPayload["dueTime"]
+                )
             )
             else -> parsedPayload
         }
@@ -140,5 +199,9 @@ class ToolRouterImpl(
 
     private fun capText(value: String, maxLength: Int): String {
         return if (value.length > maxLength) value.take(maxLength) else value
+    }
+
+    private fun firstNonBlank(vararg values: String?): String {
+        return values.firstOrNull { !it.isNullOrBlank() }.orEmpty()
     }
 }
