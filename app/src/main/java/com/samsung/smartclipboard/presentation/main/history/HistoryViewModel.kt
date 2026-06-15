@@ -74,7 +74,7 @@ private fun TaskSelectionType.toActionTypeUi(): ActionTypeUi = when (this) {
 }
 
 private fun TaskSelectionStatus.toDisplayLabel(): String = when (this) {
-    TaskSelectionStatus.DRAFT -> "초안"
+    TaskSelectionStatus.DRAFT -> "대기"
     TaskSelectionStatus.EDITED -> "수정됨"
     TaskSelectionStatus.EXECUTED -> "실행됨"
     TaskSelectionStatus.DISMISSED -> "제외됨"
