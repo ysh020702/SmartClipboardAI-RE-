@@ -158,7 +158,7 @@ class PdfExportManager @Inject constructor(
 
                 drawLayout(
                     text = reportTitle.ifBlank {
-                        "그때그거 AI 작업 초안"
+                        "그때그거 AI 작업 결과"
                     },
                     paint = reportTitlePaint,
                     spacingAfter = 30f
