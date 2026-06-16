@@ -23,6 +23,7 @@ data class TaskSelection(
     val body: String,
     val status: TaskSelectionStatus,
     val editablePayload: String?,
+    val versionHistory: String? = null,
     val createdAt: Long,
     val updatedAt: Long
 )
