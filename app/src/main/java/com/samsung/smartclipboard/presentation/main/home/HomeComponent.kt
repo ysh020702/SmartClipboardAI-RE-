@@ -550,7 +550,7 @@ internal fun HomeSettingsPanel(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "SmartClipboardAI",
+                        text = stringResource(R.string.app_name),
                         color = AppColors.Slate800,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
