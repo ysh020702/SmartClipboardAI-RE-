@@ -316,6 +316,14 @@ class DataRepositoryImpl @Inject constructor(
         return topicDao.getActionById(actionId)?.toDomain()
     }
 
+    override suspend fun updateActionVersionHistory(actionId: Long, versionHistory: String) {
+        topicDao.updateActionVersionHistory(
+            actionId = actionId,
+            versionHistory = versionHistory,
+            updatedAt = System.currentTimeMillis()
+        )
+    }
+
     override suspend fun deleteTopicById(topicId: Long) {
         topicDao.deleteActionsByTopicId(topicId)
         topicDao.deleteAnalysisByTopicId(topicId)
@@ -436,6 +444,7 @@ class DataRepositoryImpl @Inject constructor(
             body = body,
             status = runCatching { TaskSelectionStatus.valueOf(status) }.getOrDefault(TaskSelectionStatus.DRAFT),
             editablePayload = editablePayload,
+            versionHistory = versionHistory,
             createdAt = createdAt,
             updatedAt = updatedAt
         )
