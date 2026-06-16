@@ -50,7 +50,7 @@ import kotlinx.coroutines.delay
 private val analyzingSteps = listOf(
     "선택한 데이터 불러오는 중",
     "텍스트와 이미지 분석 중",
-    "실행 초안 준비 중",
+    "실행 항목 준비 중",
 )
 
 @Composable
@@ -262,7 +262,7 @@ fun AnalyzingScreen(
         Text(
             when {
                 hasFailure -> "오류가 발생했습니다. 다시 시도해주세요."
-                allSuccess -> "초안 화면으로 이동 중..."
+                allSuccess -> "결과 화면으로 이동 중..."
                 else -> "AI 에이전트가 분석 중입니다..."
             },
             color = if (hasFailure) Color(0xFFFCA5A5).copy(alpha = 0.70f) else Color(0xFF93C5FD).copy(alpha = 0.50f),

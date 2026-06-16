@@ -145,7 +145,7 @@ class ManualDataSelectionViewModel @Inject constructor(
     }
 
     /**
-     * 선택한 데이터로 Topic을 생성하고 실행 초안을 만든 뒤 TopicDetail 화면으로 이동합니다.
+     * 선택한 데이터로 Topic을 생성하고 실행 항목을 만든 뒤 TopicDetail 화면으로 이동합니다.
      * AI 주제 추천 파이프라인의 selectSuggestion과 동일한 로직을 사용합니다.
      */
     fun createTaskAndAnalyze(topicTitle: String) {
@@ -163,7 +163,7 @@ class ManualDataSelectionViewModel @Inject constructor(
                     analysisSteps = listOf(
                         AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running),
                         AnalysisStep("텍스트와 이미지 분석 대기", StepStatus.Pending),
-                        AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
+                        AnalysisStep("실행 항목 준비 대기", StepStatus.Pending),
                     ),
                 )
             }
@@ -182,7 +182,7 @@ class ManualDataSelectionViewModel @Inject constructor(
                         analysisSteps = listOf(
                             AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
                             AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running),
-                            AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
+                            AnalysisStep("실행 항목 준비 대기", StepStatus.Pending),
                         ),
                     )
                 }
@@ -197,12 +197,12 @@ class ManualDataSelectionViewModel @Inject constructor(
                         analysisSteps = listOf(
                             AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
                             AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
-                            AnalysisStep("실행 초안 준비 중", StepStatus.Running),
+                            AnalysisStep("실행 항목 준비 중", StepStatus.Running),
                         ),
                     )
                 }
 
-                // Step 3: 실행 초안 생성
+                // Step 3: 실행 항목 생성
                 val hasActions = withContext(ioDispatcher) {
                     dataRepository.observeTopicActions(createdTopicId).first().isNotEmpty()
                 }
@@ -210,7 +210,7 @@ class ManualDataSelectionViewModel @Inject constructor(
                     throw IllegalStateException("Topic 분석에 실패했습니다.")
                 }
                 if (!hasActions) {
-                    throw IllegalStateException("Topic action 초안을 만들지 못했습니다.")
+                    throw IllegalStateException("Topic action 항목을 만들지 못했습니다.")
                 }
                 delay(650)
                 _uiState.update {
@@ -218,7 +218,7 @@ class ManualDataSelectionViewModel @Inject constructor(
                         analysisSteps = listOf(
                             AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
                             AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
-                            AnalysisStep("실행 초안 준비 성공", StepStatus.Success),
+                            AnalysisStep("실행 항목 준비 성공", StepStatus.Success),
                         ),
                     )
                 }
@@ -256,7 +256,7 @@ class ManualDataSelectionViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isCreatingTask = false,
-                        errorMessage = e.message ?: "실행 초안 생성에 실패했습니다.",
+                        errorMessage = e.message ?: "실행 항목 생성에 실패했습니다.",
                         analysisSteps = updatedSteps,
                     )
                 }

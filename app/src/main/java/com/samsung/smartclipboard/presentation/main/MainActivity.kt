@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
     private var hasMediaPermission by mutableStateOf(false)
     private var isOnboardingCompleted by mutableStateOf<Boolean?>(null)
     private var permissionSkipped by mutableStateOf<Boolean?>(null)
+    private var dateOnboardingCompleted by mutableStateOf(false)
     private var mediaImportOnboardingCompleted by mutableStateOf(false)
 
     private val permissionLauncher = registerForActivityResult(
@@ -69,6 +70,7 @@ class MainActivity : ComponentActivity() {
                 collectionPeriodPreferences.setPermissionSkipped(false)
             }
             permissionSkipped = false
+            dateOnboardingCompleted = false
             mediaImportOnboardingCompleted = false
         }
     }
@@ -97,10 +99,10 @@ class MainActivity : ComponentActivity() {
                 val entryStep = when {
                     onboardingCompleted == null || skippedPermission == null -> MainEntryStep.Loading
                     !hasMediaPermission && !skippedPermission -> MainEntryStep.Permission
+                    !onboardingCompleted && !dateOnboardingCompleted -> MainEntryStep.DateOnboarding
                     !onboardingCompleted &&
                         hasMediaPermission &&
                         !mediaImportOnboardingCompleted -> MainEntryStep.MediaImport
-                    !onboardingCompleted -> MainEntryStep.DateOnboarding
                     else -> MainEntryStep.Main
                 }
 
@@ -130,14 +132,27 @@ class MainActivity : ComponentActivity() {
                     },
                     completeMediaImport = {
                         mediaImportOnboardingCompleted = true
+                        lifecycleScope.launch {
+                            withContext(Dispatchers.IO) {
+                                collectionPeriodPreferences.setOnboardingCompleted()
+                            }
+                            isOnboardingCompleted = true
+                        }
                     },
                     completeDateOnboarding = { startMs, endMs ->
                         lifecycleScope.launch {
                             withContext(Dispatchers.IO) {
                                 collectionPeriodPreferences.setCollectionPeriod(startMs, endMs)
-                                collectionPeriodPreferences.setOnboardingCompleted()
                             }
-                            isOnboardingCompleted = true
+                        }
+                        dateOnboardingCompleted = true
+                        if (!hasMediaPermission) {
+                            lifecycleScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    collectionPeriodPreferences.setOnboardingCompleted()
+                                }
+                                isOnboardingCompleted = true
+                            }
                         }
                     },
                     hasMediaPermission = hasMediaPermission,
@@ -211,7 +226,7 @@ private fun mainEntryEnterTransition(
     targetStep: MainEntryStep,
 ): EnterTransition {
     return when {
-        initialStep == MainEntryStep.Permission && targetStep == MainEntryStep.MediaImport -> {
+        initialStep == MainEntryStep.Permission && targetStep == MainEntryStep.DateOnboarding -> {
             fadeIn(
                 animationSpec = tween(
                     durationMillis = 520,
@@ -220,7 +235,7 @@ private fun mainEntryEnterTransition(
             )
         }
 
-        initialStep == MainEntryStep.MediaImport && targetStep == MainEntryStep.DateOnboarding -> {
+        initialStep == MainEntryStep.DateOnboarding && targetStep == MainEntryStep.MediaImport -> {
             fadeIn(
                 animationSpec = tween(
                     durationMillis = 420,
@@ -264,7 +279,7 @@ private fun mainEntryExitTransition(
     targetStep: MainEntryStep,
 ): ExitTransition {
     return when {
-        initialStep == MainEntryStep.Permission && targetStep == MainEntryStep.MediaImport -> {
+        initialStep == MainEntryStep.Permission && targetStep == MainEntryStep.DateOnboarding -> {
             fadeOut(
                 animationSpec = tween(
                     durationMillis = 320,
@@ -273,7 +288,7 @@ private fun mainEntryExitTransition(
             )
         }
 
-        initialStep == MainEntryStep.MediaImport && targetStep == MainEntryStep.DateOnboarding -> {
+        initialStep == MainEntryStep.DateOnboarding && targetStep == MainEntryStep.MediaImport -> {
             fadeOut(
                 animationSpec = tween(
                     durationMillis = 260,

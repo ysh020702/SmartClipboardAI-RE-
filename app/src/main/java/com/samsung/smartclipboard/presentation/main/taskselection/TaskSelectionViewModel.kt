@@ -34,6 +34,7 @@ data class TaskSelectionCardUi(
     val description: String,
     val statusLabel: String,
     val statusColor: Pair<Color, Color>,
+    val showStatusLabel: Boolean,
     val icon: ImageVector,
     val color: Color
 )
@@ -64,12 +65,6 @@ fun TaskSelection.toTaskSelectionCardUi(): TaskSelectionCardUi {
             icon = Icons.Default.Share,
             color = AppColors.Cyan
         )
-        TaskSelectionType.TODO -> TaskSelectionTypeUi(
-            routeActionType = "note",
-            typeLabel = "할 일",
-            icon = Icons.Default.Description,
-            color = AppColors.Green
-        )
     }
 
     return TaskSelectionCardUi(
@@ -80,6 +75,7 @@ fun TaskSelection.toTaskSelectionCardUi(): TaskSelectionCardUi {
         description = body,
         statusLabel = status.toDisplayLabel(),
         statusColor = status.toStatusColor(),
+        showStatusLabel = status == TaskSelectionStatus.EXECUTED,
         icon = typeUi.icon,
         color = typeUi.color
     )
@@ -94,7 +90,7 @@ private data class TaskSelectionTypeUi(
 
 private fun TaskSelectionStatus.toDisplayLabel(): String {
     return when (this) {
-        TaskSelectionStatus.DRAFT -> "초안"
+        TaskSelectionStatus.DRAFT -> "대기"
         TaskSelectionStatus.EDITED -> "수정됨"
         TaskSelectionStatus.EXECUTED -> "실행됨"
         TaskSelectionStatus.DISMISSED -> "제외됨"
@@ -103,7 +99,7 @@ private fun TaskSelectionStatus.toDisplayLabel(): String {
 
 private fun TaskSelectionStatus.toStatusColor(): Pair<Color, Color> {
     return when (this) {
-        TaskSelectionStatus.DRAFT -> Color(0xFFDBEAFE) to AppColors.Blue           // 초안 = 파란색
+        TaskSelectionStatus.DRAFT -> Color(0xFFDBEAFE) to AppColors.Blue           // 대기 = 파란색
         TaskSelectionStatus.EDITED -> Color(0xFFFEF3C7) to Color(0xFFD97706)       // 수정됨 = 노란색
         TaskSelectionStatus.EXECUTED -> Color(0xFFD1FAE5) to AppColors.Green        // 실행됨 = 초록색
         TaskSelectionStatus.DISMISSED -> Color(0xFFF1F5F9) to AppColors.Slate400   // 제외됨 = 회색

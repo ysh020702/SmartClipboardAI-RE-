@@ -271,8 +271,8 @@ private fun TopicAiSuggestResults(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        if (uiState.isCreatingTopic) "선택한 주제로 실행 초안을 준비하고 있어요."
-                        else "하나를 선택하면 AI가 실행 초안을 준비해요.",
+                        if (uiState.isCreatingTopic) "선택한 주제로 실행 항목을 준비하고 있어요."
+                        else "하나를 선택하면 AI가 실행 항목을 준비해요.",
                         color = Color(0xFFA5B4FC),
                         fontSize = 10.sp,
                     )
@@ -563,7 +563,7 @@ private fun SuggestedTopicCard(
                         Icon(Icons.Default.KeyboardArrowRight, null, tint = AppColors.Slate200, modifier = Modifier.size(16.dp))
                     }
                     Text(
-                        text = if (isCreating) "실행 초안 생성 중입니다." else topic.description,
+                        text = if (isCreating) "실행 항목 생성 중입니다." else topic.description,
                         color = AppColors.Slate500,
                         fontSize = 11.sp,
                         maxLines = 2,

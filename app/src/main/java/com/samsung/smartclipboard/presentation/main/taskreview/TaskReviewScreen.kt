@@ -81,39 +81,6 @@ fun TaskReviewScreen(
         "query" to uiState.query
     )
 
-    if (uiState.isExecuted) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .background(BlueGradient, RoundedCornerShape(20.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(30.dp))
-            }
-            Spacer(Modifier.height(18.dp))
-            Text("실행 완료", color = AppColors.Slate800, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(8.dp))
-            Text("외부 앱으로 전송이 완료되었습니다.", color = AppColors.Slate400, fontSize = 12.sp)
-            Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = { navigate(Screen.TopicDetail, backData) },
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Blue, contentColor = Color.White),
-            ) {
-                Text("토픽 상세로 돌아가기", fontWeight = FontWeight.Bold)
-            }
-        }
-        return
-    }
-
     ActionReviewScreenContent(
         uiState = uiState,
         onIntent = viewModel::onIntent,
@@ -161,7 +128,7 @@ fun ActionReviewScreenContent(
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(config.title, color = AppColors.Slate800, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("AI 초안 · 실행 전 검토", color = AppColors.Slate400, fontSize = 10.sp)
+                    Text("AI 생성 · 실행 전 검토", color = AppColors.Slate400, fontSize = 10.sp)
                 }
             }
         }

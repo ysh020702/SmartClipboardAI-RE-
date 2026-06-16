@@ -514,7 +514,7 @@ private fun TopicDataSelectionBottomBar(
         enabled = selectedCount > 0 && !isCreating,
         modifier = modifier.fillMaxWidth(),
         onClick = onCreateTask,
-        text = if (isCreating) "실행 초안 생성 중..." else "선택한 데이터로 작업 생성",
+        text = if (isCreating) "실행 항목 생성 중..." else "선택한 데이터로 작업 생성",
     )
 }
 

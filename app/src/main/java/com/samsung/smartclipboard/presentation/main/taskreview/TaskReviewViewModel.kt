@@ -50,7 +50,6 @@ data class TaskReviewUiState(
     val isEditing: Boolean = false,
     val refineInput: String = "",
     val isRefining: Boolean = false,
-    val isExecuted: Boolean = false,
     val isExecuting: Boolean = false,
     val isGeneratingPdf: Boolean = false,
     val isLoading: Boolean = false,
@@ -204,7 +203,7 @@ class TaskReviewViewModel @Inject constructor(
                     val topicItems = dataRepository.observeTopicItems(action.topicId).first()
                     currentSourceItems = topicItems.map { CandidateItem(it, 1.0f, "토픽 내 항목") }
 
-                    val initialVersion = DraftVersion(1, 0, action.title, action.body, "원본 초안")
+                    val initialVersion = DraftVersion(1, 0, action.title, action.body, "원본")
 
                     _uiState.update {
                         it.copy(
@@ -214,8 +213,7 @@ class TaskReviewViewModel @Inject constructor(
                             currentVersion = 1,
                             parentVersion = 0,
                             history = listOf(initialVersion),
-                            isLoading = false,
-                            isExecuted = action.status == TaskSelectionStatus.EXECUTED
+                            isLoading = false
                         )
                     }
                 } else {
@@ -341,7 +339,7 @@ class TaskReviewViewModel @Inject constructor(
     }
 
     /**
-     * 현재 초안 내용을 DB에 저장한다.
+     * 현재 항목 내용을 DB에 저장한다.
      * 외부 앱 실행 후 돌아와도 동일한 화면을 복원할 수 있도록 한다.
      */
     private fun saveDraftToDb(title: String, body: String) {
@@ -351,7 +349,7 @@ class TaskReviewViewModel @Inject constructor(
                 dataRepository.updateTopicActionDraft(actionId, title, body)
             } catch (e: Exception) {
                 // DB 저장 실패는 UI에 치명적이지 않으므로 로그만 남긴다
-                Log.w("ActionReview", "초안 DB 저장 실패: ${e.message}")
+                Log.w("ActionReview", "항목 DB 저장 실패: ${e.message}")
             }
         }
     }
@@ -394,7 +392,7 @@ class TaskReviewViewModel @Inject constructor(
                     currentActionId?.let { id ->
                         dataRepository.updateActionStatus(id, TaskSelectionStatus.EXECUTED)
                     }
-                    _uiState.update { it.copy(isExecuting = false, isExecuted = true) }
+                    _uiState.update { it.copy(isExecuting = false) }
                 } else {
                     setFailed("execute", executionResult.message)
                 }
@@ -454,13 +452,13 @@ class TaskReviewViewModel @Inject constructor(
                         "${state.topicTitle}_${state.title}",
                     reportTitle =
                         state.topicTitle.ifBlank {
-                            "그때그거 AI 작업 초안"
+                            "그때그거 AI 작업 결과"
                         },
                     sections = listOf(
                         PdfSection(
                             title =
                                 state.title.ifBlank {
-                                    "작업 초안"
+                                    "작업 결과"
                                 },
                             content = state.body
                         )

@@ -13,7 +13,7 @@ data class AgentResult(
 )
 
 /**
- * TopicAgent가 추천한 개별 action 초안.
+ * TopicAgent가 추천한 개별 action 항목.
  * TopicActionEntity로 변환되어 저장됩니다.
  */
 data class AgentActionDraft(

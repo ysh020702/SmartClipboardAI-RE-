@@ -268,7 +268,7 @@ class AiTopicSelectionViewModel @Inject constructor(
                     creatingSteps = listOf(
                         AnalysisStep("선택한 데이터 불러오는 중", StepStatus.Running),
                         AnalysisStep("텍스트와 이미지 분석 대기", StepStatus.Pending),
-                        AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
+                        AnalysisStep("실행 항목 준비 대기", StepStatus.Pending),
                     ),
                 )
             }
@@ -285,7 +285,7 @@ class AiTopicSelectionViewModel @Inject constructor(
                             creatingSteps = listOf(
                                 AnalysisStep("선택한 데이터 불러오기 실패", StepStatus.Failed),
                                 AnalysisStep("텍스트와 이미지 분석 대기", StepStatus.Pending),
-                                AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
+                                AnalysisStep("실행 항목 준비 대기", StepStatus.Pending),
                             ),
                         )
                     }
@@ -296,7 +296,7 @@ class AiTopicSelectionViewModel @Inject constructor(
                             creatingSteps = listOf(
                                 AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
                                 AnalysisStep("텍스트와 이미지 분석 중", StepStatus.Running),
-                                AnalysisStep("실행 초안 준비 대기", StepStatus.Pending),
+                                AnalysisStep("실행 항목 준비 대기", StepStatus.Pending),
                             ),
                         )
                     }
@@ -318,12 +318,12 @@ class AiTopicSelectionViewModel @Inject constructor(
                         creatingSteps = listOf(
                             AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
                             AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
-                            AnalysisStep("실행 초안 준비 중", StepStatus.Running),
+                            AnalysisStep("실행 항목 준비 중", StepStatus.Running),
                         ),
                     )
                 }
 
-                // Step 3: 실행 초안 생성
+                // Step 3: 실행 항목 생성
                 val hasActions = withContext(ioDispatcher) {
                     dataRepository.observeTopicActions(createdTopicId).first().isNotEmpty()
                 }
@@ -331,7 +331,7 @@ class AiTopicSelectionViewModel @Inject constructor(
                     throw IllegalStateException("Topic 분석에 실패했습니다.")
                 }
                 if (!hasActions) {
-                    throw IllegalStateException("Topic action 초안을 만들지 못했습니다.")
+                    throw IllegalStateException("Topic action 항목을 만들지 못했습니다.")
                 }
                 delay(650)
                 _uiState.update {
@@ -339,7 +339,7 @@ class AiTopicSelectionViewModel @Inject constructor(
                         creatingSteps = listOf(
                             AnalysisStep("선택한 데이터 불러오기 성공", StepStatus.Success),
                             AnalysisStep("텍스트와 이미지 분석 성공", StepStatus.Success),
-                            AnalysisStep("실행 초안 준비 성공", StepStatus.Success),
+                            AnalysisStep("실행 항목 준비 성공", StepStatus.Success),
                         ),
                     )
                 }
@@ -422,7 +422,7 @@ private fun DataCluster.toFallbackSuggestion(clusterLabel: String): TopicAiSugge
     return TopicAiSuggestionUi(
         id = "$clusterId:fallback",
         title = "$clusterLabel 정리해줘",
-        description = "이 묶음의 ${itemIds.size}개 자료를 바탕으로 요약과 실행 초안을 만들 수 있습니다.",
+        description = "이 묶음의 ${itemIds.size}개 자료를 바탕으로 요약과 실행 항목을 만들 수 있습니다.",
         confidence = if (itemIds.size >= 2) 0.55f else 0.4f,
         reason = "AI 주제 추천이 없어서 클러스터 라벨을 기반으로 제안했습니다.",
         clusterLabel = clusterLabel,

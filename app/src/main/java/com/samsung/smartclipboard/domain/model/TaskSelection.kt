@@ -4,8 +4,7 @@ enum class TaskSelectionType {
     SUMMARY,
     CALENDAR,
     REMINDER,
-    SHARE_DRAFT,
-    TODO
+    SHARE_DRAFT
 }
 
 enum class TaskSelectionStatus {

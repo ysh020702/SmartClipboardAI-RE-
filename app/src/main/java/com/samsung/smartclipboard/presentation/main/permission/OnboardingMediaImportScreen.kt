@@ -192,10 +192,7 @@ private fun GreetingCopy(
         OnboardingMediaImportPhase.Importing -> {
             if (rotatingMessageIndex == 0) "안녕하세요." else "스크린샷을 살펴보는 중이에요."
         }
-        OnboardingMediaImportPhase.Completed -> {
-            val count = result?.importedCount ?: 0
-            if (count > 0) "새 스크린샷 ${count}개를 찾았어요." else "새로 찾은 스크린샷은 없어요."
-        }
+        OnboardingMediaImportPhase.Completed -> "준비가 끝났어요."
         OnboardingMediaImportPhase.Failed -> "스크린샷을 확인하지 못했어요."
     }
 
@@ -209,14 +206,8 @@ private fun GreetingCopy(
                 "AI가 주제를 추천할 수 있도록\n최근 화면 자료를 정리하고 있어요."
             }
         }
-        OnboardingMediaImportPhase.Completed -> {
-            val count = result?.importedCount ?: 0
-            if (count > 0) {
-                "AI가 이 자료들을 바탕으로\n정리할 만한 주제를 추천해드릴 수 있어요."
-            } else {
-                "자료를 모으면 AI가 관련 내용을 묶어\n정리할 만한 주제를 추천해드릴 수 있어요."
-            }
-        }
+        OnboardingMediaImportPhase.Completed ->
+            "AI가 주제를 추천할 수 있도록\n자료를 정리했어요."
         OnboardingMediaImportPhase.Failed ->
             "괜찮아요. 공유하기나 빠른 설정 타일로\n나중에 자료를 추가할 수 있어요."
     }

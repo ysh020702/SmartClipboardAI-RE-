@@ -42,12 +42,12 @@ class FallbackRefineAgentTest {
             TestModelFactory.actionDraft(
                 type = TopicActionType.SHARE_DRAFT,
                 sourceItemIds = listOf(1L, 2L),
-                title = "공유 초안",
-                body = "공유 초안 내용",
+                title = "공유 메시지",
+                body = "공유 메시지 내용",
                 confidence = 0.75f
             )
         )
-        val feedback = "공유 초안 중심으로 짧게 만들어줘"
+        val feedback = "공유 메시지 중심으로 짧게 만들어줘"
 
         val result = refineAgent.refineActions(
             topicQuery = "회의 정리",
@@ -76,9 +76,9 @@ class FallbackRefineAgentTest {
         val selectedItems = listOf(TestModelFactory.candidateItem(id = 1L))
         val currentActions = listOf(
             TestModelFactory.actionDraft(type = TopicActionType.SUMMARY, title = "요약", body = "내용", sourceItemIds = listOf(1L)),
-            TestModelFactory.actionDraft(type = TopicActionType.SHARE_DRAFT, title = "공유 초안", body = "공유", sourceItemIds = listOf(1L))
+            TestModelFactory.actionDraft(type = TopicActionType.SHARE_DRAFT, title = "공유 메시지", body = "공유", sourceItemIds = listOf(1L))
         )
-        val feedback = "공유 초안 중심으로"
+        val feedback = "공유 메시지 중심으로"
 
         val result = refineAgent.refineActions(
             topicQuery = "주제",

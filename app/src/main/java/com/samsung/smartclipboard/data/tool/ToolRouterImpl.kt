@@ -88,7 +88,6 @@ class ToolRouterImpl(
             TaskSelectionType.CALENDAR -> "insert_calendar_event"
             TaskSelectionType.REMINDER -> "set_reminder"
             TaskSelectionType.SUMMARY -> "save_note_share"
-            TaskSelectionType.TODO -> "save_note_share"
             TaskSelectionType.SHARE_DRAFT -> "share_text"
         }
     }

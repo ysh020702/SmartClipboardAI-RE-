@@ -288,7 +288,7 @@ private fun HistoryTopicCard(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(topic.title, color = AppColors.Slate800, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${topic.date} · 데이터 ${topic.dataCount}개 · 초안 ${topic.drafts.size}개", color = AppColors.Slate400, fontSize = 10.sp)
+                    Text("${topic.date} · 데이터 ${topic.dataCount}개 · 항목 ${topic.drafts.size}개", color = AppColors.Slate400, fontSize = 10.sp)
                 }
                 if (!selectMode) {
                     val executedCount = topic.drafts.count { it.status == "실행됨" }
@@ -321,12 +321,12 @@ private fun HistoryTopicCard(
                     .padding(bottom = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                val draftCount = topic.drafts.count { it.status == "초안" }
+                val draftCount = topic.drafts.count { it.status == "대기" }
                 val editedCount = topic.drafts.count { it.status == "수정됨" }
                 val executedCount = topic.drafts.count { it.status == "실행됨" }
                 val dismissedCount = topic.drafts.count { it.status == "제외됨" }
 
-                if (draftCount > 0) StatusPill("초안 $draftCount", StatusColorType.DRAFT)
+                if (draftCount > 0) StatusPill("대기 $draftCount", StatusColorType.DRAFT)
                 if (editedCount > 0) StatusPill("수정됨 $editedCount", StatusColorType.EDITED)
                 if (executedCount > 0) StatusPill("실행됨 $executedCount", StatusColorType.EXECUTED)
                 if (dismissedCount > 0) StatusPill("제외됨 $dismissedCount", StatusColorType.DISMISSED)
