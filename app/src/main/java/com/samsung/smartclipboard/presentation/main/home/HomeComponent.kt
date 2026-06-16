@@ -30,6 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -42,11 +44,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -803,28 +803,126 @@ internal fun RecentTopicRowWithDelete(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("기록 삭제") },
-            text = { Text("정말로 이 기록을 삭제하시겠습니까?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    },
-                ) {
-                    Text("삭제")
-                }
+        DeleteConfirmDialog(
+            topicTitle = topic.title,
+            onConfirm = {
+                onDelete()
+                showDeleteDialog = false
             },
-            dismissButton = {
-                Button(
-                    onClick = { showDeleteDialog = false },
-                ) {
-                    Text("취소")
-                }
-            },
+            onDismiss = { showDeleteDialog = false },
         )
+    }
+}
+
+// === 삭제 확인 다이얼로그 ===
+
+@Composable
+private fun DeleteConfirmDialog(
+    topicTitle: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp)
+                .shadow(24.dp, RoundedCornerShape(24.dp), ambientColor = Color(0x1A000000), spotColor = Color(0x0F000000))
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White)
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // 삭제 아이콘
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(
+                        color = AppColors.Red.copy(alpha = 0.10f),
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = AppColors.Red,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+
+            Spacer(Modifier.height(18.dp))
+
+            Text(
+                text = "기록 삭제",
+                color = AppColors.Slate800,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "\"$topicTitle\"",
+                color = AppColors.Blue,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            Text(
+                text = "이 기록을 삭제하면 복구할 수 없습니다.",
+                color = AppColors.Slate400,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // 삭제 버튼 (그라데이션)
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.Red,
+                    contentColor = Color.White,
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    text = "삭제",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // 취소 버튼 (텍스트)
+            Text(
+                text = "취소",
+                color = AppColors.Slate400,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+            )
+        }
     }
 }
 
