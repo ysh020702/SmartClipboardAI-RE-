@@ -5,6 +5,10 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import com.samsung.smartclipboard.R
 
 object AppColors {
     val Blue = Color(0xFF1D4ED8)
@@ -28,8 +32,22 @@ object AppColors {
 }
 
 val BlueGradient = Brush.linearGradient(listOf(AppColors.BlueDeep, AppColors.Blue, Color(0xFF3B82F6)))
+
 val DarkGradient = Brush.linearGradient(listOf(Color(0xFF0F1F3D), Color(0xFF1A3660), AppColors.BlueDeep))
 
+val BrandNameGradient = Brush.horizontalGradient(
+    colors = listOf(
+        AppColors.BlueDeep,     // #1E3A8A
+        Color(0xFF3B82F6),      // 선명한 갤럭시 블루
+        Color(0xFF7C5CFC),      // 부담스럽지 않은 소프트 바이올렛
+    ),
+)
+
+val BrandNameFontFamily = FontFamily(
+    Font(
+        resId = R.font.gasoekone_regular
+    ),
+)
 
 @Composable
 fun SmartClipboardTheme(content: @Composable () -> Unit) {
