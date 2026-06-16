@@ -7,6 +7,7 @@ import com.samsung.smartclipboard.data.export.PdfExportManager
 import com.samsung.smartclipboard.data.export.PdfSection
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.CandidateItem
+import com.samsung.smartclipboard.domain.model.DraftVersion
 import com.samsung.smartclipboard.domain.model.RetrievalPlan
 import com.samsung.smartclipboard.domain.model.TaskSelectionStatus
 import com.samsung.smartclipboard.domain.repository.DataRepository
@@ -29,14 +30,6 @@ enum class QuickRefineTask(val label: String, val feedback: String) {
     CHANGE_TITLE("제목 바꿔줘", "제목을 더 직관적이고 이해하기 쉽게 바꿔줘."),
     TRANSLATE_EN("영어로 번역", "내용을 영어로 번역해줘. 제목과 본문 모두 영어로 작성해줘.")
 }
-
-data class DraftVersion(
-    val version: Int,
-    val parentVersion: Int,
-    val title: String,
-    val body: String,
-    val description: String
-)
 
 data class TaskReviewUiState(
     val title: String = "",
@@ -130,29 +123,39 @@ class TaskReviewViewModel @Inject constructor(
     }
 
     private fun toggleEditMode() {
-        _uiState.update { state ->
-            val wasEditing = state.isEditing
-            if (wasEditing) {
-                val currentHistoryItem = state.history.find { it.version == state.currentVersion }
-                if (currentHistoryItem != null && (currentHistoryItem.title != state.title || currentHistoryItem.body != state.body)) {
-                    val newVersionNum = (state.history.maxOfOrNull { it.version } ?: 1) + 1
-                    val newVersion = DraftVersion(newVersionNum, state.currentVersion, state.title, state.body, "직접 편집됨")
+        val state = _uiState.value
+        val wasEditing = state.isEditing
 
-                    updateCurrentDraft(state.title, state.body)
-                    saveDraftToDb(state.title, state.body)
+        if (wasEditing) {
+            val currentHistoryItem = state.history.find { it.version == state.currentVersion }
+            if (currentHistoryItem != null && (currentHistoryItem.title != state.title || currentHistoryItem.body != state.body)) {
+                val newVersionNum = (state.history.maxOfOrNull { it.version } ?: 1) + 1
+                val newTitle = state.title
+                val newBody = state.body
+                val newVersion = DraftVersion(newVersionNum, state.currentVersion, newTitle, newBody, "직접 편집됨")
 
-                    state.copy(
-                        isEditing = false,
-                        currentVersion = newVersionNum,
-                        parentVersion = state.currentVersion,
-                        history = state.history + newVersion
-                    )
-                } else {
-                    state.copy(isEditing = false)
+                // 저장 후 디스플레이: DB에 먼저 저장한 후 UI 업데이트
+                viewModelScope.launch {
+                    updateCurrentDraft(newTitle, newBody)
+                    saveDraftToDb(newTitle, newBody)
+
+                    val updatedHistory = _uiState.value.history + newVersion
+                    saveVersionHistoryToDb(updatedHistory)
+
+                    _uiState.update {
+                        it.copy(
+                            isEditing = false,
+                            currentVersion = newVersionNum,
+                            parentVersion = state.currentVersion,
+                            history = updatedHistory
+                        )
+                    }
                 }
             } else {
-                state.copy(isEditing = true)
+                _uiState.update { it.copy(isEditing = false) }
             }
+        } else {
+            _uiState.update { it.copy(isEditing = true) }
         }
     }
 
@@ -203,16 +206,31 @@ class TaskReviewViewModel @Inject constructor(
                     val topicItems = dataRepository.observeTopicItems(action.topicId).first()
                     currentSourceItems = topicItems.map { CandidateItem(it, 1.0f, "토픽 내 항목") }
 
-                    val initialVersion = DraftVersion(1, 0, action.title, action.body, "원본")
+                    // DB에 저장된 버전 히스토리가 있으면 복원, 없으면 초기 버전만 생성
+                    val savedHistory = DraftVersion.fromJsonString(action.versionHistory)
+                    val history: List<DraftVersion>
+                    val currentVersion: Int
+                    val parentVersion: Int
+
+                    if (savedHistory.isNotEmpty()) {
+                        history = savedHistory
+                        currentVersion = savedHistory.maxOf { it.version }
+                        parentVersion = savedHistory.find { it.version == currentVersion }?.parentVersion ?: 0
+                    } else {
+                        val initialVersion = DraftVersion(1, 0, action.title, action.body, "원본")
+                        history = listOf(initialVersion)
+                        currentVersion = 1
+                        parentVersion = 0
+                    }
 
                     _uiState.update {
                         it.copy(
                             topicId = action.topicId.toString(),
                             title = action.title,
                             body = action.body,
-                            currentVersion = 1,
-                            parentVersion = 0,
-                            history = listOf(initialVersion),
+                            currentVersion = currentVersion,
+                            parentVersion = parentVersion,
+                            history = history,
                             isLoading = false
                         )
                     }
@@ -230,8 +248,10 @@ class TaskReviewViewModel @Inject constructor(
         val targetVersion = state.history.find { it.version == targetVersionId }
 
         if (targetVersion != null) {
+            // 이전 버전으로 되돌릴 때는 DB에 저장하지 않음
+            // DB는 항상 최신 버전의 내용을 유지해야 하며,
+            // 나갔다가 다시 들어올 때 최신 버전이 표시되어야 함
             updateCurrentDraft(targetVersion.title, targetVersion.body)
-            saveDraftToDb(targetVersion.title, targetVersion.body)
 
             _uiState.update {
                 it.copy(
@@ -304,21 +324,24 @@ class TaskReviewViewModel @Inject constructor(
                     description = shortFeedback
                 )
 
+                // 저장 후 디스플레이: DB에 먼저 저장한 후 UI 업데이트
+                saveDraftToDb(refinedDraft.title, refinedDraft.body)
+
+                val updatedHistory = _uiState.value.history + newVersion
+                saveVersionHistoryToDb(updatedHistory)
+
                 _uiState.update {
                     it.copy(
                         isRefining = false,
                         refineInput = "",
                         currentVersion = newVersionNum,
                         parentVersion = cur.currentVersion,
-                        history = it.history + newVersion,
+                        history = updatedHistory,
                         title = refinedDraft.title,
                         body = refinedDraft.body,
                         errorMessage = null
                     )
                 }
-
-                // AI 보완 결과를 DB에 저장하여 외부 앱 실행 후에도 복원 가능하도록 함
-                saveDraftToDb(refinedDraft.title, refinedDraft.body)
             } catch (e: Exception) {
                 setFailed("refine", "AI 보완 중 오류가 발생했습니다: ${e.message}")
             }
@@ -341,16 +364,29 @@ class TaskReviewViewModel @Inject constructor(
     /**
      * 현재 항목 내용을 DB에 저장한다.
      * 외부 앱 실행 후 돌아와도 동일한 화면을 복원할 수 있도록 한다.
+     * suspend 함수이므로 호출하는 코루틴 내에서 저장 완료 후 다음 작업을 진행할 수 있다.
      */
-    private fun saveDraftToDb(title: String, body: String) {
+    private suspend fun saveDraftToDb(title: String, body: String) {
         val actionId = currentActionId ?: return
-        viewModelScope.launch {
-            try {
-                dataRepository.updateTopicActionDraft(actionId, title, body)
-            } catch (e: Exception) {
-                // DB 저장 실패는 UI에 치명적이지 않으므로 로그만 남긴다
-                Log.w("ActionReview", "항목 DB 저장 실패: ${e.message}")
-            }
+        try {
+            dataRepository.updateTopicActionDraft(actionId, title, body)
+        } catch (e: Exception) {
+            // DB 저장 실패는 UI에 치명적이지 않으므로 로그만 남긴다
+            Log.w("ActionReview", "항목 DB 저장 실패: ${e.message}")
+        }
+    }
+
+    /**
+     * 버전 히스토리를 DB에 저장한다.
+     * 화면을 나갔다가 다시 들어와도 스피너에 전체 버전 리스트가 표시되도록 한다.
+     */
+    private suspend fun saveVersionHistoryToDb(history: List<DraftVersion>) {
+        val actionId = currentActionId ?: return
+        try {
+            val json = DraftVersion.toJsonString(history)
+            dataRepository.updateActionVersionHistory(actionId, json)
+        } catch (e: Exception) {
+            Log.w("ActionReview", "버전 히스토리 DB 저장 실패: ${e.message}")
         }
     }
 

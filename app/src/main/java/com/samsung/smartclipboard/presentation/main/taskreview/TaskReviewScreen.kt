@@ -1,5 +1,10 @@
 package com.samsung.smartclipboard.presentation.main.taskreview
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,8 +40,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -48,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -164,48 +168,104 @@ fun ActionReviewScreenContent(
             }
         }
 
-        // 버전 히스토리 컨트롤
-        if (uiState.history.size > 1) {
-            item {
-                Box {
-                    Row(
+        // 버전 히스토리 컨트롤 - 항상 표시
+        item {
+            val rotation by animateFloatAsState(
+                targetValue = if (uiState.isVersionMenuExpanded) 180f else 0f,
+                animationSpec = tween(300),
+                label = "arrowRotation"
+            )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                // 버전 선택 버튼 - 다른 버튼과 동일한 스타일
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .background(Color.White, RoundedCornerShape(14.dp))
+                        .border(1.dp, config.color.copy(alpha = 0.24f), RoundedCornerShape(14.dp))
+                        .clickable { onIntent(TaskReviewIntent.ToggleVersionMenu(!uiState.isVersionMenuExpanded)) }
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.History, null, tint = config.color, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Ver.${uiState.currentVersion}",
+                        color = config.color,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        Icons.Default.ArrowDropDown,
+                        null,
+                        tint = config.color,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .rotate(rotation)
+                    )
+                }
+
+                // 드롭다운 목록 - 위아래 애니메이션으로 펼쳐짐, 버튼과 하나의 박스처럼 보임
+                AnimatedVisibility(
+                    visible = uiState.isVersionMenuExpanded,
+                    enter = expandVertically(animationSpec = tween(300)),
+                    exit = shrinkVertically(animationSpec = tween(300)),
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White, RoundedCornerShape(14.dp))
-                            .border(1.dp, config.color.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
-                            .clickable { onIntent(TaskReviewIntent.ToggleVersionMenu(true)) }
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                            .border(1.dp, config.color.copy(alpha = 0.24f), RoundedCornerShape(14.dp))
                     ) {
-                        Icon(Icons.Default.History, null, tint = config.color, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(6.dp))
-                        val parentText = if (uiState.parentVersion > 0) " (from ver. ${uiState.parentVersion})" else ""
-                        Text(
-                            text = "ver. ${uiState.currentVersion}$parentText",
-                            color = config.color,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Default.ArrowDropDown, null, tint = config.color, modifier = Modifier.size(16.dp))
-                    }
+                        uiState.history.sortedByDescending { it.version }.forEachIndexed { index, versionItem ->
+                            val isCurrent = versionItem.version == uiState.currentVersion
+                            val parentText = if (versionItem.parentVersion > 0) " (from Ver.${versionItem.parentVersion})" else ""
+                            val isLast = index == uiState.history.sortedByDescending { it.version }.lastIndex
 
-                    DropdownMenu(
-                        expanded = uiState.isVersionMenuExpanded,
-                        onDismissRequest = { onIntent(TaskReviewIntent.ToggleVersionMenu(false)) }
-                    ) {
-                        uiState.history.sortedByDescending { it.version }.forEach { versionItem ->
-                            DropdownMenuItem(
-                                text = {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onIntent(TaskReviewIntent.RevertToVersion(versionItem.version))
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "Ver.${versionItem.version}$parentText",
+                                    color = if (isCurrent) config.color else AppColors.Slate500,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                                )
+                                if (isCurrent) {
+                                    Spacer(Modifier.width(6.dp))
                                     Text(
-                                        "ver. ${versionItem.version} - ${versionItem.description}",
-                                        fontSize = 13.sp,
-                                        fontWeight = if (versionItem.version == uiState.currentVersion) FontWeight.Bold else FontWeight.Normal
+                                        text = "현재",
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier
+                                            .background(config.color, RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
-                                },
-                                onClick = { onIntent(TaskReviewIntent.RevertToVersion(versionItem.version)) }
-                            )
+                                }
+                            }
+                            // 마지막 항목이 아니면 구분선 표시
+                            if (!isLast) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                        .height(1.dp)
+                                        .background(AppColors.Slate200)
+                                )
+                            }
                         }
                     }
                 }
