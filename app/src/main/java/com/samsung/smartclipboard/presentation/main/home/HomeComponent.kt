@@ -361,7 +361,7 @@ internal fun HomeHeroHeader() {
         Spacer(Modifier.height(14.dp))
 
         Text(
-            text = stringResource(R.string.brand_name),
+            text = stringResource(R.string.app_name),
             style = TextStyle(
                 brush = BrandNameGradient,
                 fontFamily = BrandNameFontFamily,
