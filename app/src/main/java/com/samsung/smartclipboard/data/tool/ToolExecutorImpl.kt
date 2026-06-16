@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import android.util.Log
 import com.samsung.smartclipboard.domain.model.AgentActionDraft
 import com.samsung.smartclipboard.domain.model.ToolExecutionResult
 import com.samsung.smartclipboard.domain.model.ToolSpec
@@ -121,7 +122,7 @@ class ToolExecutorImpl @Inject constructor(
             val title = payload["shareTitle"].orEmpty()
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, title)
+                putExtra(Intent.EXTRA_SUBJECT, "<$title>")
                 putExtra(Intent.EXTRA_TEXT, shareText)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -217,7 +218,7 @@ class ToolExecutorImpl @Inject constructor(
         return try {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("mailto:")
-                putExtra(Intent.EXTRA_SUBJECT, subject)
+                putExtra(Intent.EXTRA_SUBJECT, "<$subject>")
                 putExtra(Intent.EXTRA_TEXT, body)
                 val to = payload["to"]
                 if (!to.isNullOrBlank()) {
@@ -394,12 +395,9 @@ class ToolExecutorImpl @Inject constructor(
             )
         }
 
-        val shareContent = if (noteBody.isNotBlank()) {
-            noteBody
-        } else {
+        val shareContent = noteBody.ifBlank {
             noteTitle
         }
-
         /*
          * Android 전체 공유 시트를 띄우지 않고
          * 삼성 노트의 공유 수신 화면을 직접 실행합니다.
@@ -411,7 +409,7 @@ class ToolExecutorImpl @Inject constructor(
                 if (noteTitle.isNotBlank()) {
                     putExtra(
                         Intent.EXTRA_SUBJECT,
-                        noteTitle
+                        "<$noteTitle>"
                     )
                 }
 
@@ -451,7 +449,7 @@ class ToolExecutorImpl @Inject constructor(
                         if (noteTitle.isNotBlank()) {
                             putExtra(
                                 Intent.EXTRA_SUBJECT,
-                                noteTitle
+                                "<$noteTitle>"
                             )
                         }
 
@@ -526,11 +524,10 @@ class ToolExecutorImpl @Inject constructor(
          * EXTRA_TEXT에는 본문만 전달하여 제목 중복을 방지합니다.
          * 알람 앱은 제목 필드가 없으므로 제목+본문을 함께 전달합니다.
          */
-        val reminderBodyForShare = if (reminderDescription.isNotBlank()) {
-            reminderDescription
-        } else {
+        val reminderBodyForShare = reminderDescription.ifBlank {
             reminderTitle
         }
+
 
         val reminderBodyForAlarm = buildString {
             if (reminderTitle.isNotBlank()) {
@@ -550,7 +547,7 @@ class ToolExecutorImpl @Inject constructor(
         val samsungReminderIntent =
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, reminderTitle)
+                putExtra(Intent.EXTRA_SUBJECT, "<$reminderTitle>")
                 putExtra(Intent.EXTRA_TEXT, reminderBodyForShare)
                 setPackage(PKG_SAMSUNG_REMINDER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
