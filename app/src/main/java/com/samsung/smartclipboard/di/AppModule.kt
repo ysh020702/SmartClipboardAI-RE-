@@ -39,6 +39,7 @@ abstract class AppModule {
                 .addMigrations(SmartClipboardDatabase.MIGRATION_5_6)
                 .addMigrations(SmartClipboardDatabase.MIGRATION_6_7)
                 .addMigrations(SmartClipboardDatabase.MIGRATION_7_8)
+                .addMigrations(SmartClipboardDatabase.MIGRATION_8_9)
                 .fallbackToDestructiveMigration()
                 .build()
         }
