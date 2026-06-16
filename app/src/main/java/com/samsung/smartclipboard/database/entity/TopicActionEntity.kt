@@ -37,6 +37,7 @@ data class TopicActionEntity(
     val body: String,
     val status: String,
     val editablePayload: String?,
+    val versionHistory: String? = null,
     val createdAt: Long,
     val updatedAt: Long
 )
