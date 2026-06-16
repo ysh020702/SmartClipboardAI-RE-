@@ -133,6 +133,20 @@ interface TopicDao {
     @Query("DELETE FROM topics WHERE id = :topicId")
     suspend fun deleteTopicById(topicId: Long)
 
+    @Query(
+        """
+        UPDATE topic_actions
+        SET versionHistory = :versionHistory,
+            updatedAt = :updatedAt
+        WHERE id = :actionId
+        """
+    )
+    suspend fun updateActionVersionHistory(
+        actionId: Long,
+        versionHistory: String,
+        updatedAt: Long
+    )
+
     @Query("DELETE FROM topic_actions WHERE id IN (:actionIds)")
     suspend fun deleteActionsByIds(actionIds: List<Long>)
 }
