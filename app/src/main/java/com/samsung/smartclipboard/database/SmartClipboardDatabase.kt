@@ -25,7 +25,7 @@ import com.samsung.smartclipboard.database.entity.DataItemEntity
         TopicActionEntity::class,
         KnowledgeEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(KeywordConverters::class)
@@ -184,6 +184,12 @@ abstract class SmartClipboardDatabase : RoomDatabase() {
                     ON topics(title, createdAt)
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE topic_actions ADD COLUMN versionHistory TEXT")
             }
         }
     }
